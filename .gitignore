@@ -1,0 +1,13 @@
+tmon.out
+*.tar.gz
+*.rej
+nytprof*
+cover_db
+_Inline
+_build
+Build
+build
+blib
+*.bak
+.svn
+*.swp
