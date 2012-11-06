@@ -1,0 +1,10 @@
+Build
+Makefile.PL
+bin
+build
+META*
+MYMETA*
+MANIFEST.*
+blib
+_build
+*.tar.gz
