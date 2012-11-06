@@ -86,31 +86,31 @@ sub setup : Test(setup) {
     my $obj = $test->class->new($test->args);
     $obj->add_view($test->def_view);
     $obj->add_constraint(
-	path => 'Employee.department.name',
-	op => '=',
-	value => 'Sandwich Distribution',
-	code => 'A',
+        path => 'Employee.department.name',
+        op => '=',
+        value => 'Sandwich Distribution',
+        code => 'A',
     );
     $obj->add_constraint(
-	path => 'Employee.age',
-	op => '<',
-	value => 18,
-	code => 'B',
+        path => 'Employee.age',
+        op => '<',
+        value => 18,
+        code => 'B',
     );
     $obj->add_constraint(
-	path => 'Employee.name',
-	op => 'ONE OF',
-	values => [qw/Tom Dick Harry/],
-	code => 'C',
+        path => 'Employee.name',
+        op => 'ONE OF',
+        values => [qw/Tom Dick Harry/],
+        code => 'C',
     );
     $obj->add_constraint(
-	path => 'Employee',
-	type => 'Manager',
+        path => 'Employee',
+        type => 'Manager',
     );
     $obj->add_join('Employee.name');
     $obj->add_pathdescription(
-	path => 'Employee.name',
-	description => 'The name of the employee',
+        path => 'Employee.name',
+        description => 'The name of the employee',
     );
     $test->{filled_obj} = $obj;
 }
@@ -157,7 +157,7 @@ sub service_methods : Test(2) {
                 query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
             },
             [$test->def_view],
-            'arrayrefs',
+            'rr',
             'perl',
             undef,
         ],
@@ -171,7 +171,7 @@ sub service_methods : Test(2) {
                 query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
             },
             [$test->def_view],
-            'arrayrefs',
+            'rr',
             'perl',
             ['a', 'b', 'c'],
         ],
@@ -254,12 +254,21 @@ sub results : Test(4) {
                 query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
             },
             [$test->def_view],
-            'arrayrefs',
+            'rr',
             'perl',
             undef,
         ],
-        "Default as per arrayref",
+        "Defaults to result-row"
     );
+}
+
+sub path_method_modification:Test(2) {
+    my $test = shift;
+    my $obj = $test->{object};
+    $obj->add_view("Employee.name");
+    my $path = $obj->path("name");
+    is ("$path", "Employee.name");
+    isa_ok($path->{service}, 'Webservice::InterMine::Service');
 }
 
 1;

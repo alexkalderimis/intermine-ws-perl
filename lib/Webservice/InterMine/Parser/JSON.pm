@@ -1,17 +1,22 @@
 package Webservice::InterMine::Parser::JSON;
 
+=head1 NAME
+
+Webservice::InterMine::Parser::JSON - parse rows of JSON results
+
+=head1 DESCRIPTION
+
+One of the parsers used to intepret results sent from 
+the webservice.
+
+=cut
+
 use Moose;
 with 'Webservice::InterMine::Parser';
-with 'Webservice::InterMine::Role::KnowsJSON';
 
-use JSON -support_by_pp, -no_export;
+use JSON::XS;
 use MooseX::Types::Moose qw(Str);
 use InterMine::Model::Types qw(Model);
-
-=head1 Webservice::InterMine::Parser::JSON
-
-Return each row of results parsed from JSON into a perl data 
-structure.
 
 =head1 IMPLEMENTED PARSER METHODS
 
@@ -37,6 +42,13 @@ This implementation checks for headers reported in the footer.
 =back
 
 =cut
+
+has json_decoder => (
+    default => sub {JSON::XS->new},
+    handles => {
+        decode => 'decode'
+    }
+);
 
 has model => (
     is => 'ro',
@@ -72,13 +84,14 @@ has footer => (
 sub parse_header {
     my $self = shift;
     my $line = shift;
-    warn $line if $ENV{DEBUG};
+    warn "HEADER-LINE: " . ((defined $line) ? $line : "NULL") if $ENV{DEBUG};
+    return unless (defined $line);
     $self->add_to_header($line);
 }
 
 sub header_is_parsed {
     my $self = shift;
-    return $self->header =~ /"results":\[$/;
+    return $self->header =~ /results["']:\[$/;
 }
 
 has completeness => (
@@ -89,15 +102,21 @@ has completeness => (
 );
 
 # Horrible hack to get around issue with role requirements...
-sub is_complete {my $self = shift; return $self->_get_completeness};
+sub is_complete {
+    my $self = shift; 
+    return $self->_get_completeness;
+};
 
 sub check_status {
     my $self = shift;
     my $container_text = $self->header . $self->footer;
+    $container_text =~ s/'/"/g; # Fix bad quotes.
+    warn $container_text if $ENV{DEBUG};
     my $container = eval {$self->decode($container_text)};
     unless ($container) {
         confess "Problem decoding container", $@, $container_text;
     }
+    return unless (exists $container->{wasSuccessful});
     confess "Results returned error: ", $container->{statusCode}, " - ", $container->{error}
         unless ($container->{wasSuccessful});
 }
@@ -116,10 +135,7 @@ sub parse_line {
         $line =~ s/,\s*$//;
         my $json = eval {$self->decode($line);};
         unless ($json) {
-            require Data::Dumper;
-            confess Data::Dumper->Dump({
-                "error" => $@, "problem line" => $line
-            });
+            confess "error: " => $@, "problem line: " => $line;
         }
         return $self->process($json) || $line;
     } else {

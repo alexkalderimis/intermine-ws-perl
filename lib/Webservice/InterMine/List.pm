@@ -45,11 +45,11 @@ with 'Webservice::InterMine::Role::Serviced';
 with 'Webservice::InterMine::Role::Showable';
 
 use Moose::Util::TypeConstraints qw(match_on_type);
-use MooseX::Types::Moose         qw/ArrayRef Undef Bool/;
+use MooseX::Types::Moose         qw/ArrayRef Undef Bool Str/;
 use InterMine::Model::Types      qw/PathString/;
 use Webservice::InterMine::Types qw/
     Date ListFactory ResultIterator Query File
-    List ListableQuery ListOfLists ListOfListableQueries
+    List Listable ListOfLists ListOfListables
     ListOperable ListOfListOperables SetObject TruthValue
 /;
 require Set::Object;
@@ -57,8 +57,9 @@ require Set::Object;
 use constant {
     LIST_APPEND_PATH => '/lists/append/json',
     RENAME_PATH => '/lists/rename/json',
-    LISTABLE => 'Webservice::InterMine::Query::Roles::Listable',
+    LISTABLE => 'Webservice::InterMine::Role::Listable',
     LIST => 'Webservice::InterMine::List',
+    ENRICHMENT_PATH => '/list/enrichment',
 };
 
 =head1 OVERLOADED OPERATIONS
@@ -201,8 +202,7 @@ sub _update_name {
     return unless (@_ > 2); 
     my ( $self, $name, $old_name ) = @_;
     return if ($name eq $old_name);
-    my $uri = URI->new($self->service_root . RENAME_PATH);
-    $uri->query_form(
+    my $uri = $self->service->build_uri($self->service_root . RENAME_PATH,
         oldname => $old_name,
         newname => $name,
     );
@@ -254,6 +254,20 @@ has 'date' => (
     is        => 'ro',
     coerce    => 1,
     predicate => 'has_date',
+);
+
+=head2 status
+
+The status of the list. Usable lists are "CURRENT", all other statuses
+mean that the user should log in to the web-app to resolve issues 
+caused by a data-base upgrade.
+
+=cut
+
+has status => (
+    isa => Str,
+    is  => 'ro',
+    predicate => 'has_status',
 );
 
 =head2 get_unmatched_ids
@@ -495,6 +509,23 @@ sub overload_appending {
     $self->append($other);
 }
 
+=head2 enrichment(widget => $name, [population => $background, maxp => $val, correction => $algorithm, filter => $filter])
+
+Receive results from an enrichment widget.
+
+=cut
+
+sub enrichment {
+    my ($self, %options) = @_;
+    my %form = %options;
+    $form{correction} ||= "Holm-Bonferroni";
+    $form{maxp} ||= 0.1;
+    $form{list} = $self->name;
+    my $uri = $self->service->build_uri($self->service_root . ENRICHMENT_PATH);
+    my $iterator = $self->service->get_results_iterator($uri, \%form, [], "json", "perl", []);
+    return $iterator;
+}
+
 =head2 to_query
 
 Return a L<Webservice::InterMine::Query> representing the elements of this
@@ -519,6 +550,11 @@ sub get_list_upload_uri {
 sub get_request_parameters {
     my $self = shift;
     return $self->to_query->get_request_parameters;
+}
+
+sub get_list_request_parameters {
+    my $self = shift;
+    return $self->to_query->get_list_request_parameters;
 }
 
 =head2 build_query
@@ -593,14 +629,14 @@ sub append {
         sub {}
     );
     match_on_type $ids => (
-        ListableQuery, sub {
-            my $uri = URI->new($_->get_list_append_uri);
-            $uri->query_form(listName => $name, path => $path, $_->get_request_parameters);
+        Listable, sub {
+            my $uri = $self->service->build_uri($_->get_list_append_uri,
+                listName => $name, path => $path, $_->get_list_request_parameters,
+            );
             $resp = $self->service->get($uri);
         },
         sub {
-            my $uri = URI->new($self->service_root . LIST_APPEND_PATH);
-            $uri->query_form(name => $name);
+            my $uri = $self->service->build_uri($self->service_root . LIST_APPEND_PATH, name => $name);
             $resp = $self->service->post($uri, 'Content-Type' => $content_type, Content => $_);
         }
     );
@@ -608,6 +644,50 @@ sub append {
     $self->add_unmatched_ids($new_list->get_unmatched_ids);
     $self->_set_size($new_list->size);
     return $self;
+}
+
+=head2 add_tags(@tags)
+
+Add the given tags to the list, updating this list on the server
+and changing the tags attribute of the object.
+
+=cut
+
+sub add_tags {
+    my $self = shift;
+    my @to_add = @_;
+    my @new_tags = $self->factory->add_tags($self, @to_add);
+    $self->tags->clear;
+    $self->tags->insert(@new_tags);
+}
+
+=head2 remove_tags(@tags)
+
+Remove the given tags from the list, updating this list on the server
+and changing the tags attribute of the object.
+
+=cut
+
+sub remove_tags {
+    my $self = shift;
+    my @to_remove = @_;
+    my @new_tags = $self->factory->remove_tags($self, @to_remove);
+    $self->tags->clear;
+    $self->tags->insert(@new_tags);
+}
+
+=head2 update_tags()
+
+Update the tags for this list to be up-to-date with those stored on
+the server.
+
+=cut
+
+sub update_tags {
+    my $self = shift;
+    my @new_tags = $self->factory->get_tags($self);
+    $self->tags->clear;
+    $self->tags->insert(@new_tags);
 }
 
 =head2 to_string

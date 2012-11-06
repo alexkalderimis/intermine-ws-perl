@@ -163,7 +163,7 @@ sub sort_order_initial_state : Test {
     );
 }
 
-sub view : Test(7) {
+sub view : Test(9) {
     my $test = shift;
     my $obj  = $test->{object};
     my @initial_view = ('Employee.name', 'Employee.age');
@@ -236,9 +236,9 @@ sub results : Test(4) {
                 op1 => '=',
                 code1 => 'B',
             },
-            $obj->view, 'arrayrefs', 'perl', undef
+            $obj->view, 'rr', 'perl', undef
         ],
-        "Default as per arrayref",
+        "Defaults to result-row"
     );
 }
 

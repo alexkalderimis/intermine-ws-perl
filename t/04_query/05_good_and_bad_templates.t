@@ -58,8 +58,7 @@ open my $GFH, '<', $good_templates
 $good_content .= $_ for <$GFH>;
 close $GFH or die "Cannot close $good_templates, $!";
 
-$good_content =~
-  s/^.*<template-queries>(.*)<\/template-queries>.*$/$1/s;
+$good_content =~ s/^.*<template-queries>(.*)<\/template-queries>.*$/$1/s;
 my @goodies = $good_content =~ m!(<template .*?</template>)!sg;
 my @sort_order = (
     'Employee.name', 'Employee.name',
@@ -67,7 +66,9 @@ my @sort_order = (
     'Employee.name', 'Employee.name',
     'Contractor.id', 'Manager.name',
     'Company.name',  'Company.name',
-    'Company.name',  'Employee.name',
+    'Company.name',  'Employee.name', 'Employee.name',
+    'Company.departments.employees.name',
+    'Employee.name',
 );
 
 ############################################################
@@ -94,7 +95,6 @@ my @baddies_names = (
       unfinished
       empty_view
       no_constraints
-      sort_order_not_in_query
       descr_and_title
       no_name
       names_differ
@@ -106,18 +106,17 @@ my @baddies_names = (
 my %baddies = mesh( @baddies_names, @baddies );
 my @baddies_errors = (
     'unexpected element: unknown_tag',
-    'BadClass not in the model',
+    'can\'t find field "BadClass"',
     'illegal path',
     'not well-formed',
     'mismatched tag',
     'No view in query',
     'Invalid template: no editable constraints',
-    '.* is not in the view',
     'both description and title',
     'No name attribute on template node',
     'We have two names and they differ',
     'No constraint with code',
-    'Inconsistent query',
+    'can\'t find field "Employee"',
     'Only editable constraints can be switchable',
 );
 my %exp_err_for = mesh( @baddies_names, @baddies_errors );
@@ -146,8 +145,7 @@ for my $xmlstring (@goodies) {
         $parser->parse($xmlstring),
         "Successfully parses good template: " . ++$c . ' of ' . @goodies
       )
-      or diag explain( $parser->parse( $t->to_xml ) ),
-      explain( $parser->parse($xmlstring) );
+      or diag explain($parser->parse( $t->to_xml )), explain($parser->parse($xmlstring));
     is(
         $t->sort_order,
         $sort_order[ $c - 1 ] . ' asc',

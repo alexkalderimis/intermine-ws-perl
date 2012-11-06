@@ -40,7 +40,7 @@ $fake_lwp->mock(
     get => sub {
 	my $self = shift;
 	my $uri  = shift;
-	my ($code, $msg, $head, $content) = (200, 'OK', [foo => 'bar']);
+	my ($code, $msg, $head, $content) = (200, 'OK', [foo => 'bar', 'Content-Location' => $uri]);
 	if ($uri =~ m!templates/xml!) {
 	    $content = $templates;
 	}
@@ -62,13 +62,10 @@ $fake_IOSock->set_isa('Net::HTTP');
 $fake_IOSock->fake_module(
     'Net::HTTP',
     new => sub {
-	delete $fake_IOSock->{io};
-	$fake_IOSock->{io} = IO::File->new($results_file, 'r');
-	return $fake_IOSock;
+        delete $fake_IOSock->{io};
+        $fake_IOSock->{io} = IO::File->new($results_file, 'r');
+        return $fake_IOSock;
     },
-);
-$fake_IOSock->mock(
-    write_request => sub {},
 );
 $fake_IOSock->mock(
     getline => sub {
@@ -76,6 +73,7 @@ $fake_IOSock->mock(
 	return $self->{io}->getline;
     },
 );
+$fake_IOSock->mock(write_request => sub { return 1; });
 $fake_IOSock->mock(
     close => sub {
 	my $self = shift;
@@ -173,7 +171,7 @@ lives_ok(
 
 is(ref $res, 'ARRAY', "And it is an arrayref");
 
-is(ref $res->[0], 'ARRAY', "An array of arrays in fact");
+is(ref $res->[0], 'Webservice::InterMine::ResultRow', "An array of result-rows in fact");
 
 is($res->[1][2], -1.23, "With the right fields")
     or diag(explain $res);
@@ -257,6 +255,7 @@ SKIP: {
         "Lives loading yaml",
     ) or diag(join "\n", map {$i++ . $_} split("\n", $out_buffer));
 
+    my $res = $t->results(as => "arrayrefs");
     is_deeply($data, $res, "Yamlises, and back, ok");
 }
 

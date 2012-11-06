@@ -58,13 +58,18 @@ use DateTime::Format::ISO8601;
 use Carp qw(confess);
 require overload;
 
+use Webservice::InterMine::Role::Listable;
+
+$SIG{__DIE__} = \&Carp::confess;
+
 use MooseX::Types -declare => [
     qw(
         Constraint ConstraintList ConstraintFactory
-        ConstraintCode UnaryOperator BinaryOperator FakeBinaryOperator
-        TernaryOperator MultiOperator LoopOperator ListOperator
-        LCUnaryOperator LCLoopOperator LCListOperator LCTernaryOperator LCMultiOperator 
-        XmlLoopOperators
+        ConstraintCode UnaryOperator BinaryOperator FakeBinaryOperator LCBinaryOperator
+        TernaryOperator MultiOperator RangeOperator LCRangeOps LCAndUnderscoredRangeOps
+        LoopOperator ListOperator NotInWithUnderScores
+        LCUnaryOperator LCLoopOperator LCListOperator LCTernaryOperator NotQuiteMulti 
+        XmlLoopOperators NoSpaceLoopOperator
 
         LogicOperator LogicGroup LogicOrStr
 
@@ -80,14 +85,14 @@ use MooseX::Types -declare => [
         ServiceVersion
         ServiceRootUri ServiceRoot NotServiceRoot SlashedPath
 
-        Query QueryType QueryName QueryHandler IllegalQueryName ListableQuery
+        Query QueryType QueryName QueryHandler IllegalQueryName Listable
 
         Template TemplateFactory TemplateHash
 
         SavedQuery SavedQueryFactory
 
-        ListFactory List ListName
-        ListOfLists ListOfListableQueries
+        ListFactory List ListName CanTreatAsList
+        ListOfLists ListOfListables
 
         ListOperable ListOfListOperables 
 
@@ -109,11 +114,16 @@ use MooseX::Types -declare => [
         SetObject
 
         True False TruthValue Truthy 
+        
+        DomNode
+
+        Path
     )
 ];
 
 use MooseX::Types::Moose qw/
-   Defined  Bool Object Str ArrayRef HashRef Undef Maybe Int/;
+   Defined Bool Object Str ArrayRef HashRef Undef Maybe Int
+/;
 
 
 # UTILITY
@@ -139,12 +149,15 @@ enum UnaryOperator,  [ 'IS NOT NULL', 'IS NULL' ];
 enum LCUnaryOperator,  [ 'is not null', 'is null' ];
 coerce UnaryOperator, from LCUnaryOperator, via {uc($_)};
 
-enum BinaryOperator, [ '=', '!=', '<', '>', '>=', '<=',];
+enum BinaryOperator, [ '=', '!=', '<', '>', '>=', '<=', 'CONTAINS', 'LIKE', 'NOT LIKE', 'DOES NOT CONTAIN'];
 enum FakeBinaryOperator, ['eq', 'ne', 'lt', 'gt', 'ge', 'le', 'EQ', 'NE', 'LT', 'GT', 'GE', 'LE'];
+enum LCBinaryOperator, ["contains", "like", "not like", "does not contain"];
+coerce BinaryOperator, from LCBinaryOperator, via {uc($_)};
 coerce BinaryOperator, from FakeBinaryOperator, via {$fake_to_real_ops{lc($_)}};
 
 enum LoopOperator,   [ 'IS', 'IS NOT',];
 enum LCLoopOperator,   [ 'is', 'is not',];
+subtype NoSpaceLoopOperator, as Str, where {lc($_) eq 'isnt'};
 enum XmlLoopOperators, [ '=', '!=', ];
 my %xml_to_readable = (
     '=' => 'IS', 
@@ -152,9 +165,12 @@ my %xml_to_readable = (
 );
 coerce LoopOperator, from LCLoopOperator, via {uc($_)};
 coerce LoopOperator, from XmlLoopOperators, via {$xml_to_readable{$_}};
+coerce LoopOperator, from NoSpaceLoopOperator, via {'IS NOT'};
 
 enum ListOperator,   [ 'IN', 'NOT IN',];
 enum LCListOperator, [ 'in', 'not in', ];
+enum NotInWithUnderScores, [ 'not_in', 'NOT_IN' ];
+coerce ListOperator, from NotInWithUnderScores, via {'NOT IN'};
 coerce ListOperator, from LCListOperator, via {uc($_)};
 
 subtype TernaryOperator, as Str, where {$_ eq 'LOOKUP'};
@@ -162,8 +178,19 @@ subtype LCTernaryOperator, as Str, where {$_ eq 'lookup'};
 coerce TernaryOperator, from LCTernaryOperator, via {uc($_)};
 
 enum MultiOperator, [ 'ONE OF', 'NONE OF', ];
-enum LCMultiOperator, [ 'one of', 'none of', ];
-coerce MultiOperator, from LCMultiOperator, via {uc($_)};
+subtype NotQuiteMulti, as Str, where {/^n?one[ _-]of$/i};
+coerce MultiOperator, from NotQuiteMulti, via {s/[_-]/ /g;uc($_)};
+
+my @range_ops = (
+    'OVERLAPS', 'DOES NOT OVERLAP',
+    'WITHIN', 'OUTSIDE', 
+    'CONTAINS', 'DOES NOT CONTAIN'
+);
+enum RangeOperator, [ @range_ops ];
+enum LCRangeOps, [ map lc, @range_ops ];
+enum LCAndUnderscoredRangeOps, [ map {s/ /_/g; lc} @range_ops ];
+coerce RangeOperator, from LCRangeOps, via { uc };
+coerce RangeOperator, from LCAndUnderscoredRangeOps, via {s/_/ /g; uc };
 
 class_type Constraint, { class => 'Webservice::InterMine::Constraint' };
 subtype ConstraintList, as ArrayRef [Constraint];
@@ -231,7 +258,9 @@ coerce Service, from Str, via {
 };
 
 subtype ServiceVersion, as Int, where {$_ > 0}, 
-    message {'I could not get the version number for this service - please check the url and make sure the service is available'};
+    message {'I could not get the version number for this service - please check the url and make sure the service is available. I expected a number, but got ' . $_};
+
+coerce ServiceVersion, from Str, via {s/\s*//g;$_};
 
 subtype ServiceRootUri, as Uri, where {$_->path =~ m|/service$| && $_->scheme},
     message { "Uri does not look like a service url: got $_" };
@@ -272,8 +301,8 @@ subtype IllegalQueryName, as Str, where { /[^\w\.,\s-]/ };
 enum QueryType, [ 'template', 'saved-query', ];
 class_type QueryHandler, { class => 'Webservice::InterMine::Query::Handler', };
 class_type Query,        { class => 'Webservice::InterMine::Query::Core', };
-subtype ListableQuery, as Query, where {$_->does('Webservice::InterMine::Query::Roles::Listable')};
-subtype ListOfListableQueries, as ArrayRef[ListableQuery];
+role_type Listable, {role => 'Webservice::InterMine::Role::Listable'};
+subtype ListOfListables, as ArrayRef[Listable];
 coerce QueryName, from IllegalQueryName, 
     via { 
         s/[^a-zA-Z0-9_,. -]/_/g; 
@@ -297,9 +326,10 @@ coerce TemplateFactory, from ArrayRef, via {
 class_type ListFactory, { class => 'Webservice::InterMine::ListFactory', };
 class_type List, {class => 'Webservice::InterMine::List'};
 subtype ListName, as Str;
+duck_type CanTreatAsList, ['to_list_name'];
 subtype ListOfLists, as ArrayRef[List];
 
-subtype ListOperable, as List|ListableQuery;
+subtype ListOperable, as List | Listable;
 subtype ListOfListOperables, as ArrayRef[ListOperable];
 
 coerce ListFactory, from HashRef, via {
@@ -307,18 +337,15 @@ coerce ListFactory, from HashRef, via {
     Webservice::InterMine::ListFactory->new( $_ );
 };
 
-coerce ListName, from ListableQuery, via {
-    require Webservice::InterMine::Path;
+coerce ListName, from Listable, via {
     my $service = $_->service;
-    if ($_->view_size != 1) {
-        confess "Cannot convert this query to a list";
+    my $list = eval {$service->new_list(content => $_)};
+    if (my $e = $@) {
+        confess "Cannot coerce this query into a list, because:\n" . $e;
     }
-    my $path = $_->view->[0];
-    my $type = Webservice::InterMine::Path::last_class_type($_->model, $path);
-
-    my $list = $service->new_list(type => $type, content => $_);
     return $list->name;
 };
+coerce ListName, from CanTreatAsList, via {$_->to_list_name};
 coerce ListName, from List, via {$_->name};
 
 # SAVED QUERIES
@@ -338,9 +365,9 @@ coerce SavedQueryFactory, from Str, via {
 # RESULT ITERATION
 
 role_type RowParser, {role => "Webservice::InterMine::Parser"};
-enum RowFormat, ['arrayrefs', 'hashrefs', 'xml', 'tab', 'tsv', 'csv', 'jsonobjects', 'jsonrows', 'jsondatatable', 'count'];
+enum RowFormat, ['arrayrefs', 'hashrefs', 'xml', 'tab', 'tsv', 'csv', 'jsonobjects', 'jsonrows', 'jsondatatable', 'count', 'json'];
 enum JsonFormat, ['perl', 'inflate', 'instantiate'];
-enum RequestFormat, ['tab', 'csv', 'count', 'jsonobjects', 'jsonrows', 'xml', 'jsondatatable'];
+enum RequestFormat, ['tab', 'csv', 'count', 'jsonobjects', 'jsonrows', 'xml', 'jsondatatable', 'json'];
 subtype TSVFormat, as Str, where {/^tsv$/i};
 
 class_type ResultIterator, {class => 'Webservice::InterMine::ResultIterator'};
@@ -368,5 +395,10 @@ subtype False, as Defined, where {$_ == 0 || $_ eq "0"};
 subtype TruthValue, as True | False;
 subtype Truthy, as Object, where {overload::Method($_, 'bool')};
 coerce TruthValue, from Truthy, via {$_ ? 1 : 0};
+
+class_type DomNode, { class => 'XML::DOM::Node' };
+
+class_type Path, { class => 'Webservice::InterMine::Path' };
+coerce Str, from Path, via {$_->to_string};
 
 1;

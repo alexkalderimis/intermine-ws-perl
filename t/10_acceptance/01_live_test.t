@@ -10,14 +10,12 @@ use Test::Exception;
 
 use MooseX::Types::Moose qw(Bool);
 
-$SIG{__WARN__} = \&Carp::cluck;
-
 my $do_live_tests = $ENV{RELEASE_TESTING};
 
 unless ($do_live_tests) {
     plan( skip_all => "Acceptance tests for release testing only" );
 } else {
-    plan( tests => 67 );
+    plan( tests => 191 );
 }
 
 my $module = 'Webservice::InterMine';
@@ -51,7 +49,7 @@ throws_ok(
     "Throws an error at bad urls",
 );
 
-is($module->get_service->version, 4, "Service version is correct");
+ok($module->get_service->version >= 6, "Service version is correct");
 isa_ok($module->get_service->model, 'InterMine::Model', "The model the service makes");
 my $q;
 lives_ok(sub {$q = $module->new_query}, "Makes a new query ok");
@@ -136,7 +134,7 @@ $q->add_constraint(
     value => "CompanyA"
 );
 
-#diag($q2->url, "=>\n" , $q2->results(as => 'string'));
+note("Querying for results");
 
 lives_ok(
     sub {$res = $q->results},
@@ -145,7 +143,7 @@ lives_ok(
 
 is(ref $res, 'ARRAY', "And it is an arrayref");
 
-is(ref $res->[0], 'ARRAY', "An array of arrays in fact");
+is(ref $res->[0], 'Webservice::InterMine::ResultRow', "An array of result-rows in fact");
 
 is($res->[1][1], "20", "With the right fields - Int") or diag(explain $res);;
 is($res->[1][3], "Employee Street, AVille", "With the right fields - Str") or diag(explain $res);;
@@ -160,7 +158,7 @@ my $res_slice = [
   'EmployeeA1'
 ];
 
-is_deeply($q->results(size => 1, start => 1), $res_slice, "Can handle start and size");
+is_deeply($q->results(size => 1, start => 1)->[0]->to_aref, $res_slice, "Can handle start and size");
 
 $q->add_constraint(
     path  => 'Employee.age',
@@ -174,8 +172,18 @@ lives_ok(
 );
 
 is(@$res, 3, "Gets the right number of records");
-is($res->[1]->{'Employee.age'}, "20", "with the right fields - Int");
+is($res->[1]->{'Employee.age'}, 20, "with the right fields - Int");
 is($res->[1]->{'Employee.address.address'}, "Employee Street, AVille", "with the right fields - Str");
+
+lives_ok(
+    sub {$res = $q->results(as => 'arrayrefs')},
+    "Queries for results as arrayrefs",
+);
+
+is(@$res, 3, "Gets the right number of records");
+is($res->[1][1], 20, "with the right fields - Int");
+is($res->[1][3], "Employee Street, AVille", "with the right fields - Str");
+
 
 lives_ok(
     sub {$res = $q->results(as => 'jsonobjects', json => 'perl')},
@@ -186,6 +194,8 @@ is(@$res, 3, "Gets the right number of records");
 is($res->[1]{age}, 20, "with the right fields - Int");
 is($res->[1]{address}{address}, "Employee Street, AVille", "with the right fields - Str");
 ok($res->[1]{fullTime}, "with the right fields - Bool");
+
+is(3, $q->count, "Can get a count");
 
 lives_ok(
     sub {$res = $q->results(as => 'jsonobjects', json => 'raw')},
@@ -220,14 +230,13 @@ lives_ok(
 is(@$res, 3, "Gets the right number of records");
 is($res->[1]->getAge, 20, "with the right fields - Int");
 is($res->[1]->getAddress->getAddress, "Employee Street, AVille", "with the right fields - Str");
-ok($res->[1]->getFullTime, "with the right fields - Bool");
 
 PRINTING: {
     my $buffer = '';
     open(my $fh, '>', \$buffer) or die "Horribly, $!";
     $q->print_results(to => $fh, columnheaders => 1);
     close $fh or die "$!";
-    my $expected = qq|Employee > name\tEmployee > age\tEmployee > fullTime\tEmployee > address > address\tEmployee > department > name\tEmployee > department > company > name\tEmployee > department > manager > name
+    my $expected = qq|Employee > Name\tEmployee > Years Alive\tEmployee > Works Full Time?\tEmployee > Lives At\tEmployee > Works In\tEmployee > Works For\tEmployee > Works Under
 EmployeeA1\t10\ttrue\tEmployee Street, AVille\tDepartmentA1\tCompanyA\tEmployeeA1
 EmployeeA2\t20\ttrue\tEmployee Street, AVille\tDepartmentA1\tCompanyA\tEmployeeA1
 EmployeeA3\t30\tfalse\tEmployee Street, AVille\tDepartmentA1\tCompanyA\tEmployeeA1
@@ -246,18 +255,25 @@ SHOWING: {
     open(my $fh, '>', \$buffer) or die "Horribly, $!";
     $q->show($fh);
     close $fh or die "$!";
-    my $expected = q|VIEW: [Employee.name, Employee.age, Employee.fullTime, Employee.address.address, Employee.department.name, Employee.department.company.name, Employee.department.manager.name], CONSTRAINTS: [[Employee.department.company LOOKUP "CompanyA" IN "NULL"],[Employee.age < "35"],], LOGIC: A and B, SORT_ORDER: Employee.name asc
-Employee.name           Employee.age            Employee.fullTime       Employee.address.addressEmployee.department.nameEmployee.department.company.nameEmployee.department.manager.name
-EmployeeA1              10                      true                    Employee Street, AVille DepartmentA1            CompanyA                EmployeeA1              
-EmployeeA2              20                      true                    Employee Street, AVille DepartmentA1            CompanyA                EmployeeA1              
-EmployeeA3              30                      false                   Employee Street, AVille DepartmentA1            CompanyA                EmployeeA1              
-|; 
+    my $expected = q!VIEW:.[Employee.name,.Employee.age,.Employee.fullTime,.Employee.address.address,.Employee.department.name,.Employee.department.company.name,.Employee.department.manager.name],.CONSTRAINTS:.[<Employee.department.company.LOOKUP."CompanyA".IN."NULL">,<Employee.age.<."35">,],.LOGIC:.A.and.B,.SORT_ORDER:.Employee.name.asc
+--------------+--------------+-------------------+--------------------------+--------------------------+----------------------------------+---------------------------------
+Employee.name.|.Employee.age.|.Employee.fullTime.|.Employee.address.address.|.Employee.department.name.|.Employee.department.company.name.|.Employee.department.manager.name
+--------------+--------------+-------------------+--------------------------+--------------------------+----------------------------------+---------------------------------
+EmployeeA1....|.10...........|.true..............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
+EmployeeA2....|.20...........|.true..............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
+EmployeeA3....|.30...........|.false.............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
+!;
+    for ($buffer, $expected) {
+        s/\t/[TAB]/g;
+        s/ /./g;
+        s/\r/[CR]/g;
+    }
     is $buffer, $expected, "Can show a query";
 }
 
 my $t;
 lives_ok(
-    sub {$t = $module->template('employeesFromCompanyAndDepartment');},
+    sub {$t = $module->template('Department_Employees');},
     "Gets a template ok",
 );
 
@@ -266,7 +282,7 @@ isa_ok($t, 'Webservice::InterMine::Query::Template', "The template");
 is($t->editable_constraints, 2, "And it has 2 editable constraints");
 
 lives_ok(
-    sub {$res = $t->results_with(valueA => "CompanyB");},
+    sub {$res = $t->results_with(valueA => '*', valueB => "CompanyB");},
     "Runs results with ok",
 ) or diag($t->url);
 
@@ -276,8 +292,11 @@ my $exp_res = [
     ['EmployeeB3', '60']
 ];
 
-is_deeply($res, $exp_res, "With the right fields")
-    or diag($t->url, explain $res), diag $t->show_constraints;
+for my $row (0, 1, 2) {
+    for my $col (0, 1) {
+        is($res->[$row][$col], $exp_res->[$row][$col]);
+    }
+}
 
 $exp_res = [
     ['EmployeeA1','10'],
@@ -285,38 +304,59 @@ $exp_res = [
     ['EmployeeA3','30']
 ];
 
+# Hack to fix broken template on the server
+$t->get_constraint('A')->set_value('DepartmentA1');
+
 $res = $t->results;
 
-is_deeply($res,  $exp_res, "And ditto for results") or diag($t->url, explain $res);
+for my $row (0, 1, 2) {
+    for my $col (0, 1) {
+        is($res->[$row][$col], $exp_res->[$row][$col], "value of $col:$row is wrong");
+    }
+}
 
-$exp_res = ['EmployeeA2',20];
+$exp_res = ['EmployeeA2',20, "true"];
 
-is_deeply($t->results(size => 1, start => 1), $exp_res, "And it handles start and size");
+is_deeply($t->results(size => 1, start => 1)->[0]->to_aref, $exp_res, "And it handles start and size");
 
 $exp_res = [
     {
-        'age' => 10,
-        'class' => 'Manager',
-        'name' => 'EmployeeA1',
-    },
-    {
-        'age' => 20,
-        'class' => 'Employee',
-        'name' => 'EmployeeA2',
-    },
-    {
-        'age' => 30,
-        'class' => 'Employee',
-        'name' => 'EmployeeA3',
-    }
-];
+        class => 'Department',
+        employees => [
+        {
+            'age' => 10,
+            'class' => 'Manager',
+            'name' => 'EmployeeA1',
+        },
+        {
+            'age' => 20,
+            'class' => 'Employee',
+            'name' => 'EmployeeA2',
+        },
+        {
+            'age' => 30,
+            'class' => 'Employee',
+            'name' => 'EmployeeA3',
+        }
+    ]
+}];
 $res = $t->results(as => "jsonobjects");
-for my $r (@$res) {
-    delete $r->{objectId}; # Horrifically ugly, but we cannot rely on these to be consistent.
+
+sub clean {
+    my @things = @_;
+    for my $thing (@things) {
+        delete $thing->{objectId};
+        delete $thing->{fullTime};
+        if (my $employees = $thing->{employees}) {
+            clean(@$employees);
+        }
+    }
 }
+clean(@$res);
+
 is_deeply($res, $exp_res, "And for complex formats") or diag(explain $res);
 $res = $t->results(as => "jsonobjects", json => 'inflate');
-is($res->[0]->name, "EmployeeA1", "Can access inflated columns ok");
+is($res->[0]->employees->[0]->name, "EmployeeA1", "Can access inflated columns ok");
 
 subtest "and for json rows" => sub {
     $res = $t->results(as => "jsonrows");
@@ -332,14 +372,16 @@ subtest "and for json rows" => sub {
 SHOWING_TEMPLATES: {
     my $buffer = '';
     open(my $fh, '>', \$buffer) or die "Horribly, $!";
-    $t->show_with(valueA => 'companyB', to => $fh);
+    $t->show_with(valueA => '*', valueB => 'companyB', to => $fh);
     close $fh or die "$!";
-    my $expected = q|View all the employees that work within a certain department of the specified company - VIEW: [Employee.name, Employee.age], CONSTRAINTS: [[Employee.department.name = "Department*" (locked)],[Employee.department.company.name = "companyB" (locked)],], LOGIC: B and A, SORT_ORDER: Employee.name asc
-Employee.name...........Employee.age............
-EmployeeB1..............40......................
-EmployeeB2..............50......................
-EmployeeB3..............60......................
-|;
+    my $expected = q!Department_Employees.-.Department.-->.Employees
+--------------------------+--------------------------+------------------------------
+Department.employees.name.|.Department.employees.age.|.Department.employees.fullTime
+--------------------------+--------------------------+------------------------------
+EmployeeB1................|.40.......................|.true.........................
+EmployeeB2................|.50.......................|.true.........................
+EmployeeB3................|.60.......................|.true.........................
+!;
     $buffer =~ s/ /./g;
     $expected =~ s/ /./g;
     
@@ -349,12 +391,12 @@ EmployeeB3..............60......................
 PRINTING_TEMPLATES: {
     my $buffer = '';
     open(my $fh, '>', \$buffer) or die "Horribly, $!";
-    $t->print_results_with(valueA => 'companyB', to => $fh, columnheaders => 1);
+    $t->print_results_with(valueA => '*', valueB => 'companyB', to => $fh, columnheaders => 1);
     close $fh or die "$!";
-    my $expected = qq|Employee.>.name\tEmployee.>.age
-EmployeeB1\t40
-EmployeeB2\t50
-EmployeeB3\t60
+    my $expected = qq|Department.>.Employees.>.Name	Department.>.Employees.>.Years.Alive	Department.>.Employees.>.Works.Full.Time?
+EmployeeB1	40	true
+EmployeeB2	50	true
+EmployeeB3	60	true
 |;
     $buffer =~ s/ /./g;
     $expected =~ s/ /./g;
@@ -369,6 +411,123 @@ lives_ok {$loaded = $module->load_query(source_file => "t/data/loadable_query.xm
 $exp_res = [ ['EmployeeA1','DepartmentA1'] ];
 
 $res = $loaded->results;
-is_deeply($res, $exp_res, "Can get results for queries loaded from xml")
-    or diag(explain $res);
+is($res->[0][0], $exp_res->[0][0], "Can get results for queries loaded from xml");
+is($res->[0][1], $exp_res->[0][1], "Can get results for queries loaded from xml");
+
+AUTHENTICATION: {
+    require Webservice::InterMine::Service;
+    my $authenticated_service;
+    my @password_credentials = ("intermine-test-user", "intermine-test-user-password");
+    my $token = "test-user-token";
+
+    my $token_service = Webservice::InterMine::Service->new($url, $token);
+
+    is($token_service->token, $token, "Interprets arguments correctly as token");
+
+    my $template2 = $token_service->template("private-template-1");
+
+    is($template2->get_count, 53, "Can read a private template using a token service");
+    
+    my $foolish_auth_method = sub {
+        $authenticated_service = Webservice::InterMine::Service->new($url, @password_credentials);
+    };
+
+    SKIP: {
+        unless (eval "require Test::Warn;") {
+            eval {
+                no warnings; 
+                $foolish_auth_method->();
+            };
+            skip "Test Warn not installed", 1;
+        } else {
+            Test::Warn::warning_like($foolish_auth_method, qr/API token/, 
+                "Warns people who are not careful with their passwords"
+            );
+        }
+    }
+
+    my $template = $authenticated_service->template("private-template-1");
+
+    is($template->get_count, 53, "Can read a private template using username/password credentials");
+}
+
+
+PARSING_EMPTY_RESULTS: {
+    my $q = $module->new_query(class => 'Manager');
+    $q->add_views('*');
+    $q->add_constraint('name', '=', 'Santa Claus');
+    my $res;
+    lives_ok {$res = $q->results} "It's ok to ask about Santa Claus";
+    is_deeply($res, [], "But there is no Santa Claus");
+}
+
+DBIX_SUGAR: {
+    my @results = $module->get_service
+                         ->resultset('Manager')
+                         ->search({'department.name' => 'Sales'});
+
+    is(@results, 3, "Search returns result");
+    is_deeply(
+        [ 'David Brent', 'Michael Scott', 'Gilles Triquet',], 
+        [map {$_->getName} @results], 
+        "And they have the expected content - reified objects"
+    ) or diag explain(\@results);
+
+}
+
+TEST_IMPORTED_FNS: {
+    my @results = resultset("Manager")->search({"department.name" => 'Sales'});
+    is(@results, 3, "Can get results with search");
+    is_deeply(
+        [ 'David Brent', 'Michael Scott', 'Gilles Triquet',], 
+        [map {$_->getName} @results], 
+        "And they have the expected content - reified objects"
+    ) or diag explain(\@results);
+    
+    my $res = get_template('Department_Employees')->results_with(
+        valueA => '*',
+        valueB => "CompanyB"
+    );
+    my $exp_res = [
+        ['EmployeeB1','40'],
+        ['EmployeeB2','50'],
+        ['EmployeeB3', '60']
+    ];
+    for my $row (0, 1, 2) {
+        for my $col (0, 1) {
+            is($res->[$row][$col], $exp_res->[$row][$col], "Results are rows, as expected");
+        }
+    }
+
+    is ($module->get_service->version, get_service()->version, "Testing get_service");
+
+}
+
+TEST_LIST_STATUS: {
+    #my @lists = get_service("www.flymine.org/query")->get_lists();
+    my @lists = get_service("localhost/intermine-test", "test-user-token")->get_lists();
+    ok($lists[0]->has_status, "Status is provided");
+    my %possible_statuses = (CURRENT => 1, TO_UPGRADE => 1, NOT_CURRENT => 1);
+    ok($possible_statuses{$lists[0]->status}, "And list is one of the possible statuses");
+}
+
+TEST_DEFAULT_FORMATS: {
+    my $query = resultset("Manager")->select("name", "department.name");
+    my $rr = "Webservice::InterMine::ResultRow";
+    while (my $row = <$query>) {
+        ok($row->isa($rr), "isa result-row");
+    }
+
+    my $ro = "Webservice::InterMine::ResultObject";
+    my $it = $query->iterator(as => 'ro');
+    while (my $row = <$it>) {
+        ok($row->isa($ro), "isa result-object");
+    }
+
+    my $class = "Manager";
+    $it = $query->iterator(as => 'objects');
+    while (my $row = <$it>) {
+        ok($row->isa($class), "isa Manager");
+    }
+}
 

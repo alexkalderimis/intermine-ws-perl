@@ -10,11 +10,24 @@ Webservice::InterMine::Service - an object representation of an Webservice::Inte
 
   my $service = Webservice::InterMine->get_service('www.flymine.org/query/service');
 
-  my $query    = $service->new_query;
+  # Construct queries...
+  my $query    = $service->new_query(class => 'Gene');
+
+  # Access templates...
   my $template = $service->template('Probe_Genes')
       or die "Cannot find template"
 
-  # ... do stuff with your query/template
+  # Manage lists
+  my $new_list = $service->new_list(content => $filename, type => 'Gene');
+  my $existing_list = $service->list($name);
+
+  # Get metadata
+  my $model = $service->model
+ 
+  # Get path info
+  my $path = $service->new_path("Gene.homologues.homologue.symbol");
+
+  # ... do stuff with your objects
 
 =head1 DESCRIPTION
 
@@ -28,6 +41,7 @@ objects you can use for running queries.
 
 use Moose;
 with 'Webservice::InterMine::Role::ModelOwner';
+use strict;
 use Net::HTTP;
 use URI;
 use LWP;
@@ -39,9 +53,12 @@ use InterMine::Model::Types qw(Model);
 use Carp qw(croak confess);
 use Moose::Meta::Role;
 use Perl6::Junction qw(any);
+use Time::HiRes qw/gettimeofday/;
+use Webservice::InterMine::Path;
+use Webservice::InterMine::Model;
 
-my @JSON_FORMATS = (qw/jsonobjects jsonrows jsondatatable/);
-my @SIMPLE_FORMATS = (qw/ tsv tab csv count xml/);
+my @JSON_FORMATS = (qw/jsonobjects jsonrows jsondatatable json/);
+my @SIMPLE_FORMATS = (qw/tsv tab csv count xml/);
 
 =head2 new( $url, [$user, $pass] )
 
@@ -56,22 +73,34 @@ around BUILDARGS => sub {
     my $orig  = shift;
     my $class = shift;
     my @build_args = @_;
-    if ( @_ <= 3 and $_[0] ne 'root' ) {
-        my %args;
-        for (qw/root user pass/) {
-            my $next = shift @build_args;
-            $args{$_} = $next if $next;
-        }
-        return $class->$orig(%args);
+    my %args;
+    if      ( @_ == 3 ) {
+        @args{qw/root user pass/} = @build_args;
+    } elsif ( @_ == 2 and $_[0] ne "root" ) {
+        @args{qw/root token/} = @build_args;
+    } elsif ( @_ == 1 ) {
+        @args{qw/root/} = @build_args;
     } else {
-        return $class->$orig(@_);
+        %args = @build_args;
     }
+    return $class->$orig(%args);
 };
 
+# validate the initial state of the object
 sub BUILD {
     my $self = shift;
+    if ($self->has_user and $self->version >= 6) {
+        warnings::warnif("deprecated", "The use of username and password authentication is deprecated. Please use API token authentication");
+    }
     if ($self->has_user xor $self->has_pass) {
         croak "User name or password supplied, but not both";
+    }
+    if ($self->has_user and $self->has_token) {
+        croak "Both user/password and token credentials supplied. Please choose only one";
+    }
+    if ($self->has_token and ($self->version < 6)) {
+        croak "This service does not support token authentication - it is only at version ", 
+            $self->version;
     }
 }
 
@@ -99,6 +128,8 @@ use constant {
 
     RESOURCE_AVAILABILITY_PATH => '/check',
 
+    POSSIBLE_VALUES_PATH       => '/path/values',
+
     USER_AGENT                 => 'WebserviceInterMinePerlAPIClient',
 };
 
@@ -121,7 +152,7 @@ fetch templates and load saved queries.
 
 =head1 ATTRIBUTES
 
-=head2 root | user | pass
+=head2 root | user | pass | token
 
 The values passed into the constructor can be accessed
 via these methods. Note that the url passed in will have
@@ -137,17 +168,9 @@ has root => (
     handles  => { host => 'host', },
 );
 
-has user => (
-    is  => 'ro',
-    isa => Str,
-    predicate => 'has_user',
-);
-
-has pass => (
-    is  => 'ro',
-    isa => Str,
-    predicate => 'has_pass',
-);
+for my $attr (qw/user pass token/) {
+    has $attr => (is => 'ro', isa => Str, predicate => 'has_' . $attr);
+}
 
 =head2 model
 
@@ -159,7 +182,10 @@ database schema. See L<InterMine::Model>
 
 sub _build_model {
     my $self = shift;
-    $self->fetch( $self->root . MODEL_PATH );
+    my $src = $self->fetch( $self->root . MODEL_PATH );
+    my $model = Webservice::InterMine::Model->new(string => $src);
+    $model->set_service($self);
+    $model;
 }
 
 =head2 version
@@ -174,6 +200,7 @@ which serves to validate the webservice.
 has version => (
     is       => 'ro',
     isa      => ServiceVersion,
+    coerce   => 1,
     required => 1,
     default  => sub {
         my $self = shift;
@@ -234,12 +261,49 @@ sub get_authstring {
     return undef;
 }
 
+sub build_uri {
+    my $self = shift;
+    my $uri = shift;
+    my @params = $self->build_params(@_);
+    $uri = URI->new($uri);
+    $uri->query_form(@params);
+    return $uri;
+}
+
+sub build_params {
+    my $self = shift;
+    my @params = (@_ != 1) 
+        ? @_
+        : (ref $_[0] eq 'HASH') ? %{$_[0]} : @{$_[0]};
+    push @params, token => $self->token if ($self->has_token);
+    return @params;
+}
+
+
 =head1 METHODS
 
-=head2 new_query
+=head2 new_query([%args])
 
 This returns a new query object for you to define
 by adding constraints and a view to.
+
+The most useful arguments are the root class, eg:
+
+  my $query = $service->new_query(class => 'Gene');
+
+With this, you can use the shortcuts for adding views:
+
+  # Adds all attributes
+  $query->add_views('*');
+
+And avoid having to repeat the root class on other calls:
+
+ # 'Gene.' is now optional
+ $query->add_constraint('symbol', '=', 'eve');
+
+Note it is also possible to use a two parameter style for adding constraints:
+
+ $query->add_constraint(symbol => 'eve');
 
 See L<Webservice::InterMine::Query>
 
@@ -258,6 +322,51 @@ sub new_query {
         %args,
     );
     return apply_roles( $query, $roles );
+}
+
+=head2 resultset(name) -> query
+
+Return a new query object with the named class set as the 
+root class of the query and all attribute fields
+selected for output. This method is provided in part
+to emulate some surface features of DBIx::Class.
+
+  my @results = $service->resultset('Gene')->search({symbol => [qw/zen bib h eve/]});
+  for my $gene (@results) {
+    print $gene->name;
+  }
+
+=cut
+
+sub resultset {
+    my ($self, $name) = @_;
+    my $query = $self->new_query(class => $name);
+    $query->select('*');
+    return $query;
+}
+
+=head2 table(name) -> query from table
+
+Alias for resultset()
+
+=cut
+
+sub table { goto &resultset }
+
+=head2 select(@views) -> query with views
+
+Return a new query object with the given views selected for output.
+This is a shortcut method for C<< $service->new_query->select(@_) >>.
+
+  $service->select("Gene.*", "proteins.*")->where("Gene" => {in => "my-list"})->show;
+
+=cut
+
+sub select {
+    my $self = shift;
+    my @views = @_;
+    my $query = $self->new_query->select(@views);
+    return $query;
 }
 
 =head2 new_from_xml(source_file => $file_name)
@@ -283,22 +392,42 @@ sub new_from_xml {
     return apply_roles( $query, $roles );
 }
 
-=head2 template( $name [$roles] )
+=head2 Template Methods:
+
+For handling template objects, see L<Webservice::InterMine::Query::Template>
+
+=over 2
+
+=item * template( $name )
 
 This checks to see if there is a template of this name in the
 webservice, and returns it to you if it exists. If the user
 has provided user credentials, then that user's private templates
-will also be accessible.
+will also be accessible. If the template exists but cannot be
+parsed (and so will not run) an exception will be throws (which it up to you
+to catch).
 
-See L<Webservice::InterMine::Query::Template>
-
-=head2 get_templates() 
+=item * get_templates() 
 
 Returns all the templates available from the service as a list.  If 
 the user has provided user credentials, then that user's private templates
-will also be accessible.
+will also be accessible. The number of templates returned in this list may NOT
+be the same as the figure returned by C<get_template_count> - any templates that 
+cannot be parsed (and so will not run) are excluded from the list.
 
-See L<Webservice::InterMine::Query::Template>
+=item * get_template_count()
+
+Gets the count of all templates reported as available at the webservice. This may 
+include broken templates.
+
+=item * get_template_names() 
+
+Returns a list of names of the templates available at the service. No guarantee
+is made to the order these names are returned in - you may have to do some sorting 
+if you require them to be alphabetical. This list includes all templates, working or
+broken.
+
+=back
 
 =cut
 
@@ -317,6 +446,8 @@ has _templates => (
     handles => { 
         get_template => 'get_template_by_name', 
         get_templates => 'get_templates',
+        get_template_count => 'get_template_count',
+        get_template_names => 'get_template_names',
     },
 );
 
@@ -338,7 +469,7 @@ has _saved_queries => (
     handles => { saved_query => 'get_saved_query_by_name', },
 );
 
-=head2 LIST METHODS
+=head2 List Methods
 
 For handling list objects, see L<Webservice::InterMine::List>.
 
@@ -463,7 +594,9 @@ has _lists => (
     writer => '_set_lists',
     handles => { 
         list => 'get_list', 
+        get_list => 'get_list',
         lists => 'get_lists', 
+        get_lists => 'get_lists',
         lists_with_object => 'get_lists_with_object',
         list_names => 'get_list_names',
         new_list => 'new_list',
@@ -478,6 +611,7 @@ has _lists => (
     },
 );
 
+
 sub _build__lists {
     my $self = shift;
     return {service => $self};
@@ -490,6 +624,37 @@ sub get_list_data {
     }
     return $self->fetch( $self->root . LIST_PATH );
 }
+
+=head2 new_path(Str path, [path => class, ...])
+
+Construct new path objects for use with path based webservices. 
+The path will be immediately validated, so it is important that any
+subclass constraints that affect this path's validity are included. 
+Subclass constraints can be listed as key-value pairs, or as a 
+hash-ref.
+
+EG:
+
+  my $path = $service->new_path("Department.employees.name");
+  my $path = $service->new_path("Department.employees.name", 
+    "Department.employees" => "Manager");
+  my $path = $service->new_path("Department.employees.name", 
+    {"Department.employees" => "Manager"});
+
+Any irrelevant subclass constraint values are ignored.
+
+For handling path objects to retrieve lists of potential values, see
+L<Webservice::InterMine::Path>
+
+=cut
+
+sub new_path {
+    my $self = shift;
+    my $path = shift;
+    my $subtypes = (@_ == 1) ? shift : {@_};
+    return Webservice::InterMine::Path->new($path, $self, $subtypes);
+}
+
 # Applies user supplied roles to object instances at runtime
 sub apply_roles {
     my $instance = shift;
@@ -549,6 +714,8 @@ sub get_results_iterator {
     my $parser = $self->create_row_parser($row_format, $view_list, $json_format);
     my $request_format = $self->get_request_format($row_format);
 
+    $query_form->{token} = $self->token if $self->has_token;
+
     my $response = Webservice::InterMine::ResultIterator->new(
         url           => $url,
         parameters    => $query_form,
@@ -565,6 +732,8 @@ sub get_request_format {
     my $row_format = shift;
     if ($row_format eq any(@SIMPLE_FORMATS, @JSON_FORMATS)) {
         return $row_format;
+    } elsif ($self->version >= 8) { # Not available earlier...
+        return "json";
     } else {
         return "jsonrows";
     }
@@ -576,10 +745,13 @@ sub create_row_parser {
     if ($row_format eq any(@SIMPLE_FORMATS)) {
         require Webservice::InterMine::Parser::FlatFile;
         return Webservice::InterMine::Parser::FlatFile->new();
-    } elsif ($row_format eq "arrayrefs") {
+    } elsif ($row_format eq 'rr') {
+        require Webservice::InterMine::Parser::JSON::ResultRows;
+        return Webservice::InterMine::Parser::JSON::ResultRows->new(view => $view_list);
+    } elsif ($row_format eq 'arrayrefs') {
         require Webservice::InterMine::Parser::JSON::ArrayRefs;
         return Webservice::InterMine::Parser::JSON::ArrayRefs->new();
-    } elsif ($row_format eq "hashrefs") {
+    } elsif ($row_format eq 'hashrefs') {
         require Webservice::InterMine::Parser::JSON::HashRefs;
         return Webservice::InterMine::Parser::JSON::HashRefs->new(view => $view_list);
     } elsif ($row_format eq any(@JSON_FORMATS)) {
@@ -603,11 +775,17 @@ items of data from the service.
 sub fetch {
     my $self = shift;
     my $url  = shift;
-    my $uri  = URI->new($url);
+    my $uri  = $self->build_uri($url);
+    warn "FETCHING $uri " . gettimeofday() if $ENV{DEBUG};
     my $resp = $self->agent->get($uri);
+    # Correct incorrect bases.
+    if ($uri->host ne $resp->base->host) {
+        $self->root->host($resp->base->host);
+    }
     if ( $resp->is_error ) {
         confess $resp->status_line, $resp->content;
     } else {
+        warn "FINISHED FETCHING $uri " . gettimeofday() if $ENV{DEBUG};
         return $resp->content;
     }
 }
@@ -650,7 +828,8 @@ This is used internally to save templates and queries.
 sub send_off {
     my $self = shift;
     my ( $xml, $url ) = @_;
-    my $form = { xml => $xml, };
+    my $uri = $self->build_uri($url);
+    my $form = {xml => $xml};
     my $resp = $self->post( $url, $form );
     if ( $resp->is_error ) {
         confess $resp->status_line, "\n", $resp->content;
