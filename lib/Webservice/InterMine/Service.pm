@@ -54,8 +54,8 @@ use Carp qw(croak confess);
 use Moose::Meta::Role;
 use Perl6::Junction qw(any);
 use Time::HiRes qw/gettimeofday/;
-require Webservice::InterMine::Path;
-require Webservice::InterMine::Model;
+use Webservice::InterMine::Path;
+use Webservice::InterMine::Model;
 
 my @JSON_FORMATS = (qw/jsonobjects jsonrows jsondatatable json/);
 my @SIMPLE_FORMATS = (qw/tsv tab csv count xml/);

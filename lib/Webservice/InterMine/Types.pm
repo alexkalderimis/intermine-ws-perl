@@ -58,6 +58,10 @@ use DateTime::Format::ISO8601;
 use Carp qw(confess);
 require overload;
 
+use Webservice::InterMine::Role::Listable;
+
+$SIG{__DIE__} = \&Carp::confess;
+
 use MooseX::Types -declare => [
     qw(
         Constraint ConstraintList ConstraintFactory
@@ -118,7 +122,8 @@ use MooseX::Types -declare => [
 ];
 
 use MooseX::Types::Moose qw/
-   Defined  Bool Object Str ArrayRef HashRef Undef Maybe Int/;
+   Defined Bool Object Str ArrayRef HashRef Undef Maybe Int
+/;
 
 
 # UTILITY
@@ -324,7 +329,7 @@ subtype ListName, as Str;
 duck_type CanTreatAsList, ['to_list_name'];
 subtype ListOfLists, as ArrayRef[List];
 
-subtype ListOperable, as List|Listable;
+subtype ListOperable, as List | Listable;
 subtype ListOfListOperables, as ArrayRef[ListOperable];
 
 coerce ListFactory, from HashRef, via {
