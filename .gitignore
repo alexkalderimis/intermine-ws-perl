@@ -1,6 +1,5 @@
 Build
 Makefile.PL
-bin
 build
 META*
 MYMETA*
