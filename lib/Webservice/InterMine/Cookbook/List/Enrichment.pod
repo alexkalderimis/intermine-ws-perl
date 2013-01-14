@@ -1,0 +1,57 @@
+=pod
+
+=head1 NAME
+
+Webservice::InterMine::Cookbook::List::Enrichment - List Enrichment
+
+=head1 SYNOPSIS
+
+  use Webservice::InterMine;
+
+  my $service = Webservice::InterMine->get_service('www.flymine.org/query');
+
+  my $list = $service->list('PL classIII');
+
+  my $results = $list->enrichment(
+    widget => 'publication_enrichment',
+    population => 'my-custom-background',
+    maxp => 0.01
+  );
+
+  for (<$results>) {
+    printf "%s (%s) - %.3f\n", $_->{identifier}, $_->{description}, $_->{p-value};
+  }
+
+=head1 DESCRIPTION
+
+You can perfom enrichment calculations on lists that you have access to.
+
+=head1 SEE ALSO
+
+=over 
+
+=item L<Webservice::InterMine::Service>
+
+=item L<Webservice::InterMine::List>
+
+=item L<Webservice::InterMine::ResultIterator>
+
+=back
+
+=cut
+
+use Webservice::InterMine;
+
+my $service = Webservice::InterMine->get_service('www.flymine.org/query');
+
+my $list = $service->list('PL classIII');
+
+my $results = $list->enrichment(
+    widget => 'publication_enrichment',
+    population => 'PL FlyAtlas_testis_top',
+    maxp => 0.01
+);
+
+for (<$results>) {
+    printf "%s (%s) - %.3f\n", $_->{identifier}, $_->{description}, $_->{p-value};
+}
