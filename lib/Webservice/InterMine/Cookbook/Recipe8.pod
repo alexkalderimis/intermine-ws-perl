@@ -58,7 +58,7 @@ other query.
 
 =head1 CONCLUSION
 
-Queriess can be uploaded to the web-service, if you have provided your
+Queries can be uploaded to the web-service, if you have provided your
 login information. This means that these queries will be available
 anywhere that the webservice is.
 

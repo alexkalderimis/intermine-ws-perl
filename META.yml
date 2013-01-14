@@ -4,6 +4,7 @@ author:
   - 'Alex Kalderimis <dev@intermine.org>'
 build_requires:
   Module::Build: 0.36
+  Set::CrossProduct: 0
   Test::Class: 0
   Test::Exception: 0
   Test::MockObject: 0
@@ -13,7 +14,8 @@ build_requires:
   XML::Rules: 0
 configure_requires:
   Module::Build: 0.36
-generated_by: 'Module::Build version 0.3624'
+dynamic_config: 1
+generated_by: 'Module::Build version 0.38, CPAN::Meta::Converter version 2.112150'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -22,180 +24,262 @@ name: Webservice-InterMine
 provides:
   Webservice::InterMine:
     file: lib/Webservice/InterMine.pm
-    version: 0.9700
+    version: 1.0103
   Webservice::InterMine::Constraint:
     file: lib/Webservice/InterMine/Constraint.pm
+    version: 0
   Webservice::InterMine::Constraint::Binary:
     file: lib/Webservice/InterMine/Constraint/Binary.pm
+    version: 0
   Webservice::InterMine::Constraint::List:
     file: lib/Webservice/InterMine/Constraint/List.pm
+    version: 0
   Webservice::InterMine::Constraint::Loop:
     file: lib/Webservice/InterMine/Constraint/Loop.pm
+    version: 0
   Webservice::InterMine::Constraint::Multi:
     file: lib/Webservice/InterMine/Constraint/Multi.pm
+    version: 0
+  Webservice::InterMine::Constraint::Range:
+    file: lib/Webservice/InterMine/Constraint/Range.pm
+    version: 0
   Webservice::InterMine::Constraint::Role::Logical:
     file: lib/Webservice/InterMine/Constraint/Role/Logical.pm
+    version: 0
   Webservice::InterMine::Constraint::Role::Operator:
     file: lib/Webservice/InterMine/Constraint/Role/Operator.pm
+    version: 0
   Webservice::InterMine::Constraint::Role::Template:
     file: lib/Webservice/InterMine/Constraint/Role/Template.pm
+    version: 0
   Webservice::InterMine::Constraint::Role::Templated:
     file: lib/Webservice/InterMine/Constraint/Role/Templated.pm
+    version: 0
   Webservice::InterMine::Constraint::SubClass:
     file: lib/Webservice/InterMine/Constraint/SubClass.pm
+    version: 0
   Webservice::InterMine::Constraint::Ternary:
     file: lib/Webservice/InterMine/Constraint/Ternary.pm
+    version: 0
   Webservice::InterMine::Constraint::Unary:
     file: lib/Webservice/InterMine/Constraint/Unary.pm
+    version: 0
   Webservice::InterMine::ConstraintFactory:
     file: lib/Webservice/InterMine/ConstraintFactory.pm
+    version: 0
   Webservice::InterMine::Join:
     file: lib/Webservice/InterMine/Join.pm
+    version: 0
   Webservice::InterMine::List:
     file: lib/Webservice/InterMine/List.pm
+    version: 0
   Webservice::InterMine::ListFactory:
     file: lib/Webservice/InterMine/ListFactory.pm
+    version: 0
   Webservice::InterMine::LogicParser:
     file: lib/Webservice/InterMine/LogicParser.pm
+    version: 0
   Webservice::InterMine::LogicalOperator:
     file: lib/Webservice/InterMine/LogicalOperator.pm
+    version: 0
   Webservice::InterMine::LogicalSet:
     file: lib/Webservice/InterMine/LogicalSet.pm
+    version: 0
+  Webservice::InterMine::Model:
+    file: lib/Webservice/InterMine/Model.pm
+    version: 0
   Webservice::InterMine::Parser:
     file: lib/Webservice/InterMine/Parser.pm
+    version: 0
   Webservice::InterMine::Parser::FlatFile:
     file: lib/Webservice/InterMine/Parser/FlatFile.pm
+    version: 0
   Webservice::InterMine::Parser::JSON:
     file: lib/Webservice/InterMine/Parser/JSON.pm
+    version: 0
   Webservice::InterMine::Parser::JSON::ArrayRefs:
     file: lib/Webservice/InterMine/Parser/JSON/ArrayRefs.pm
+    version: 0
   Webservice::InterMine::Parser::JSON::HashRefs:
     file: lib/Webservice/InterMine/Parser/JSON/HashRefs.pm
+    version: 0
+  Webservice::InterMine::Parser::JSON::ResultRows:
+    file: lib/Webservice/InterMine/Parser/JSON/ResultRows.pm
+    version: 0
   Webservice::InterMine::Path:
     file: lib/Webservice/InterMine/Path.pm
+    version: 0
   Webservice::InterMine::PathDescription:
     file: lib/Webservice/InterMine/PathDescription.pm
+    version: 0
   Webservice::InterMine::PathFeature:
     file: lib/Webservice/InterMine/PathFeature.pm
+    version: 0
   Webservice::InterMine::Query:
     file: lib/Webservice/InterMine/Query.pm
+    version: 0
   Webservice::InterMine::Query::Core:
     file: lib/Webservice/InterMine/Query/Core.pm
+    version: 0
   Webservice::InterMine::Query::Handler:
     file: lib/Webservice/InterMine/Query/Handler.pm
+    version: 0
   Webservice::InterMine::Query::Roles::ExtendedQuery:
     file: lib/Webservice/InterMine/Query/Roles/ExtendedQuery.pm
+    version: 0
   Webservice::InterMine::Query::Roles::HTMLTable:
     file: lib/Webservice/InterMine/Query/Roles/HTMLTable.pm
+    version: 0
   Webservice::InterMine::Query::Roles::Listable:
     file: lib/Webservice/InterMine/Query/Roles/Listable.pm
+    version: 0
   Webservice::InterMine::Query::Roles::QueryParameters:
     file: lib/Webservice/InterMine/Query/Roles/QueryParameters.pm
+    version: 0
   Webservice::InterMine::Query::Roles::QueryUrl:
     file: lib/Webservice/InterMine/Query/Roles/QueryUrl.pm
+    version: 0
   Webservice::InterMine::Query::Roles::ReadInAble:
     file: lib/Webservice/InterMine/Query/Roles/ReadInAble.pm
+    version: 0
   Webservice::InterMine::Query::Roles::Runnable:
     file: lib/Webservice/InterMine/Query/Roles/Runnable.pm
+    version: 0
   Webservice::InterMine::Query::Roles::Saved:
     file: lib/Webservice/InterMine/Query/Roles/Saved.pm
+    version: 0
   Webservice::InterMine::Query::Roles::ScriptAble:
     file: lib/Webservice/InterMine/Query/Roles/ScriptAble.pm
+    version: 0
   Webservice::InterMine::Query::Roles::TemplateParameters:
     file: lib/Webservice/InterMine/Query/Roles/TemplateParameters.pm
+    version: 0
   Webservice::InterMine::Query::Roles::Templateable:
     file: lib/Webservice/InterMine/Query/Roles/Templateable.pm
+    version: 0
   Webservice::InterMine::Query::Roles::Templated:
     file: lib/Webservice/InterMine/Query/Roles/Templated.pm
+    version: 0
   Webservice::InterMine::Query::Roles::Uploadable:
     file: lib/Webservice/InterMine/Query/Roles/Uploadable.pm
+    version: 0
   Webservice::InterMine::Query::Roles::WriteExcel:
     file: lib/Webservice/InterMine/Query/Roles/WriteExcel.pm
+    version: 0
   Webservice::InterMine::Query::Roles::WriteOutAble:
     file: lib/Webservice/InterMine/Query/Roles/WriteOutAble.pm
+    version: 0
   Webservice::InterMine::Query::Roles::WriteOutLegacy:
     file: lib/Webservice/InterMine/Query/Roles/WriteOutLegacy.pm
+    version: 0
   Webservice::InterMine::Query::Roles::WriteOutYaml:
     file: lib/Webservice/InterMine/Query/Roles/WriteOutYaml.pm
+    version: 0
   Webservice::InterMine::Query::Saved:
     file: lib/Webservice/InterMine/Query/Saved.pm
+    version: 0
   Webservice::InterMine::Query::SavedHandler:
     file: lib/Webservice/InterMine/Query/SavedHandler.pm
+    version: 0
   Webservice::InterMine::Query::Scripted:
     file: lib/Webservice/InterMine/Query/Scripted.pm
+    version: 0
   Webservice::InterMine::Query::Template:
     file: lib/Webservice/InterMine/Query/Template.pm
+    version: 0
   Webservice::InterMine::Query::TemplateHandler:
     file: lib/Webservice/InterMine/Query/TemplateHandler.pm
+    version: 0
   Webservice::InterMine::ResultIterator:
     file: lib/Webservice/InterMine/ResultIterator.pm
+    version: 0
   Webservice::InterMine::ResultIterator::Role::HTMLTableRow:
     file: lib/Webservice/InterMine/ResultIterator/Role/HTMLTableRow.pm
+    version: 0
   Webservice::InterMine::ResultObject:
     file: lib/Webservice/InterMine/ResultObject.pm
+    version: 0
+  Webservice::InterMine::ResultRow:
+    file: lib/Webservice/InterMine/ResultRow.pm
+    version: 0
   Webservice::InterMine::Role::Described:
     file: lib/Webservice/InterMine/Role/Described.pm
+    version: 0
   Webservice::InterMine::Role::HasQuery:
     file: lib/Webservice/InterMine/Role/HasQuery.pm
+    version: 0
   Webservice::InterMine::Role::KnowsJSON:
     file: lib/Webservice/InterMine/Role/KnowsJSON.pm
+    version: 0
+  Webservice::InterMine::Role::Listable:
+    file: lib/Webservice/InterMine/Role/Listable.pm
+    version: 0
   Webservice::InterMine::Role::Logical:
     file: lib/Webservice/InterMine/Role/Logical.pm
+    version: 0
   Webservice::InterMine::Role::ModelOwner:
     file: lib/Webservice/InterMine/Role/ModelOwner.pm
+    version: 0
   Webservice::InterMine::Role::Named:
     file: lib/Webservice/InterMine/Role/Named.pm
+    version: 0
   Webservice::InterMine::Role::Serviced:
     file: lib/Webservice/InterMine/Role/Serviced.pm
+    version: 0
   Webservice::InterMine::Role::Showable:
     file: lib/Webservice/InterMine/Role/Showable.pm
+    version: 0
   Webservice::InterMine::Service:
     file: lib/Webservice/InterMine/Service.pm
+    version: 0
   Webservice::InterMine::ServiceResolver:
     file: lib/Webservice/InterMine/ServiceResolver.pm
-  Webservice::InterMine::Simple:
-    file: lib/Webservice/InterMine/Simple.pm
-  Webservice::InterMine::Simple::Query:
-    file: lib/Webservice/InterMine/Simple/Query.pm
-  Webservice::InterMine::Simple::Service:
-    file: lib/Webservice/InterMine/Simple/Service.pm
+    version: 0
   Webservice::InterMine::SortOrder:
     file: lib/Webservice/InterMine/SortOrder.pm
+    version: 0
   Webservice::InterMine::TemplateConstraintFactory:
     file: lib/Webservice/InterMine/TemplateConstraintFactory.pm
+    version: 0
   Webservice::InterMine::TemplateFactory:
     file: lib/Webservice/InterMine/TemplateFactory.pm
+    version: 0
   Webservice::InterMine::Types:
     file: lib/Webservice/InterMine/Types.pm
+    version: 0
 recommends:
   Perl::Tidy: 20070801
   Spreadsheet::WriteExcel: 0
+  Test::Warn: 0
   YAML::Syck: 1.07
 requires:
   AppConfig: 0
+  Class::InsideOut: 1.04
   DateTime: 0
   DateTime::Format::ISO8601: 0
   HTTP::Request::Common: 0
   HTTP::Response: 0
   IO::File: 0
   IO::Handle: 0
-  InterMine::Model: 0.9700
+  InterMine::Model: 0.9901
   JSON: 0
+  JSON::XS: 0
   LWP: 5.8
   List::MoreUtils: 0.22
   MIME::Base64: 0
   Module::Find: 0.05
   Moose: 0.95
   MooseX::Role::WithOverloading: 0.03
-  MooseX::Types: 0.22
+  MooseX::Types: 0.34
   Perl6::Junction: 0
   Pod::Usage: 0
   Scalar::Util: 0
   Set::Object: 0
+  Time::HiRes: 0
   URI: 1.37
   XML::DOM: 0
   XML::Parser::PerlSAX: 0.08
   perl: v5.8.3
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.9700
+version: 1.0103
