@@ -8,7 +8,7 @@ Webservice::InterMine::Cookbook::List::Upload - Uploading Lists
 
   use Webservice::InterMine;
 
-  my $service = Webservice::InterMine->get_service('www.flymine.org/query', token => $TOKEN);
+  my $service = Webservice::InterMine->get_service('www.flymine.org/query', $TOKEN);
 
   # From a file on disk containing gene symbols (one per line).
   my $file = '/path/to/some/file/somewhere.tsv';

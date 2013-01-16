@@ -373,10 +373,10 @@ TAGGING_UPDATES: {
             tags => ["test-tag-x"],
         );
         my @tags = ("test-tag-a", "test-tag-b");
-        is($list->tags->size, 1, "Tags are empty to start with");
+        is($list->tags->size, 1, "One tag to begin with");
         is_deeply(
-            [$service->_lists->add_tags($list, @tags)],
-            [@tags, "test-tag-x"],
+            [sort $service->_lists->add_tags($list, @tags)],
+            [sort @tags, "test-tag-x"],
             "Added the tags correctly"
         );
         is($list->tags->size, 1, "But the list doesn't know anything about that");

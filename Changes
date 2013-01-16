@@ -162,6 +162,8 @@ Revision history for Webservice-InterMine
         Adding missing file to Manifest.
 1.0104: Mon Jan 14 12:27:40 GMT 2013
         Added further cook book documentation
-
+1.0200: Tue Jan 15 17:56:13 GMT 2013
+        Added method to get list of widgets. (Webservice::InterMine::Service::widgets).
+        Added mechanism for submitting ID resolution jobs and polling for results.
         
 

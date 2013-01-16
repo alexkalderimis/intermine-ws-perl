@@ -39,9 +39,12 @@ objects you can use for running queries.
 
 =cut
 
+use strict;
+
 use Moose;
 with 'Webservice::InterMine::Role::ModelOwner';
-use strict;
+with 'Webservice::InterMine::Role::KnowsJSON';
+
 use Net::HTTP;
 use URI;
 use LWP;
@@ -56,6 +59,7 @@ use Perl6::Junction qw(any);
 use Time::HiRes qw/gettimeofday/;
 use Webservice::InterMine::Path;
 use Webservice::InterMine::Model;
+use Webservice::InterMine::IDResolutionJob;
 
 my @JSON_FORMATS = (qw/jsonobjects jsonrows jsondatatable json/);
 my @SIMPLE_FORMATS = (qw/tsv tab csv count xml/);
@@ -123,6 +127,8 @@ use constant {
 
     LIST_PATH                  => '/lists/json',
     LISTS_WITH_OBJ_PATH        => '/listswithobject/json',
+
+    WIDGETS_PATH               => '/widgets/json',
 
     SAVEDQUERY_PATH            => '/savedqueries/xml',
 
@@ -625,6 +631,45 @@ sub get_list_data {
     return $self->fetch( $self->root . LIST_PATH );
 }
 
+=head2 widgets()
+
+Get a list of all widgets available from the web service. In scalar
+context this returns an array reference.
+
+  for my $widget ($service->widgets) {
+    print $widget->{name}, "\n";
+  }
+
+=cut
+
+sub widgets {
+    my $self = shift;
+    my $data = $self->decode($self->fetch( $self->root . WIDGETS_PATH ));
+    unless ($data->{wasSuccessful}) {
+        confess $data->{error};
+    }
+    my $widgets = $data->{widgets};
+    if (wantarray) {
+        return @$widgets;
+    } else {
+        return $widgets;
+    }
+}
+
+=head2 resolve_ids(identifiers => [Str], type => Str, extra => Str?, caseSensitive => Bool?, wildCards => Bool?)
+
+Send of a request to resolve a set of identifiers. Returns
+an L<Webservice::InterMine::IDResolutionJob>.
+
+=cut
+
+sub resolve_ids {
+    my $self = shift;
+    my %opts = @_;
+    my $job = Webservice::InterMine::IDResolutionJob->new(service => $self, %opts);
+    return $job;
+}
+
 =head2 new_path(Str path, [path => class, ...])
 
 Construct new path objects for use with path based webservices. 
@@ -788,6 +833,24 @@ sub fetch {
         warn "FINISHED FETCHING $uri " . gettimeofday() if $ENV{DEBUG};
         return $resp->content;
     }
+}
+
+=item * fetch_json($path)
+
+A wrapper around fetch that gets the content of a response to a path, and
+parses that response as JSON, returning the reified data structure.
+
+=cut
+
+sub fetch_json {
+    my $self = shift;
+    my $url  = $self->root . shift;
+    my $text = $self->fetch($url);
+    my $data = $self->decode($text);
+    unless ($data->{wasSuccessful}) {
+        confess($data->{error});
+    }
+    return $data;
 }
 
 has resource_paths => (

@@ -36,14 +36,15 @@ is_deeply(
 is('37.0243902439024390', $rs->summarize("age")->{average}, 
     "Can pull out a single value");
 
+my $boolean_summary = $rs->summarize("fullTime");
 is_deeply(
-    $rs->summarize("fullTime"),
+    $boolean_summary,
     {
-        '1' => 33,
-        '0' => 49
+        true => 33,
+        false => 49
     },
-    "Can summarise all info, serialising booleans to 0/1"
-);
+    "Can summarise all info"
+) or diag explain $boolean_summary;
 
 is_deeply( 
     $rs->summarize("department.manager.name"),

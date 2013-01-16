@@ -7,7 +7,7 @@ has json => (
     isa => 'JSON',
     is => 'ro',
     lazy_build => 1,
-    handles => ['decode'],
+    handles => ['decode', 'encode'],
 );
 
 sub _build_json {

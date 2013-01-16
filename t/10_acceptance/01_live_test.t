@@ -33,7 +33,7 @@ isa_ok($module->get_service, 'Webservice::InterMine::Service', "The service it m
 
 throws_ok(
     sub {$module->get_service("not.a.good.url")},
-    qr/Could not resolve/,
+    qr/Uri does not look like a service url/,
     "Throws an error at bad urls",
 );
 

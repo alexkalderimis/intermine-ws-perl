@@ -24,7 +24,7 @@ name: Webservice-InterMine
 provides:
   Webservice::InterMine:
     file: lib/Webservice/InterMine.pm
-    version: 1.0103
+    version: 1.0200
   Webservice::InterMine::Constraint:
     file: lib/Webservice/InterMine/Constraint.pm
     version: 0
@@ -66,6 +66,9 @@ provides:
     version: 0
   Webservice::InterMine::ConstraintFactory:
     file: lib/Webservice/InterMine/ConstraintFactory.pm
+    version: 0
+  Webservice::InterMine::IDResolutionJob:
+    file: lib/Webservice/InterMine/IDResolutionJob.pm
     version: 0
   Webservice::InterMine::Join:
     file: lib/Webservice/InterMine/Join.pm
@@ -282,4 +285,4 @@ requires:
   perl: v5.8.3
 resources:
   license: http://dev.perl.org/licenses/
-version: 1.0103
+version: 1.0200

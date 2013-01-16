@@ -20,6 +20,7 @@ lib/Webservice/InterMine/Constraint/Ternary.pm
 lib/Webservice/InterMine/Constraint/Unary.pm
 lib/Webservice/InterMine/ConstraintFactory.pm
 lib/Webservice/InterMine/Cookbook.pod
+lib/Webservice/InterMine/Cookbook/IdResolution.pod
 lib/Webservice/InterMine/Cookbook/List/Combination.pod
 lib/Webservice/InterMine/Cookbook/List/Enrichment.pod
 lib/Webservice/InterMine/Cookbook/List/Upload.pod
@@ -34,6 +35,7 @@ lib/Webservice/InterMine/Cookbook/Recipe7.pod
 lib/Webservice/InterMine/Cookbook/Recipe8.pod
 lib/Webservice/InterMine/Cookbook/Templates/Recipe1.pod
 lib/Webservice/InterMine/Cookbook/Templates/Recipe2.pod
+lib/Webservice/InterMine/IDResolutionJob.pm
 lib/Webservice/InterMine/Join.pm
 lib/Webservice/InterMine/List.pm
 lib/Webservice/InterMine/ListFactory.pm
@@ -123,12 +125,12 @@ t/07_intermine/01_integration.t
 t/10_acceptance/01_live_test.t
 t/10_acceptance/02_lists.t
 t/10_acceptance/02_lists_with_tokens.t
-t/10_acceptance/03_service_resolution.t
 t/10_acceptance/04_paths.t
 t/10_acceptance/05_summaries.t
 t/10_acceptance/06_redirection.t
 t/10_acceptance/07_lazy_references.t
 t/10_acceptance/08_enrichment.t
+t/10_acceptance/09_widgets.t
 t/data/bad_templates.xml
 t/data/bad_xml.txt
 t/data/default-template-queries.xml
@@ -174,3 +176,4 @@ t/tests/Test/Webservice/InterMine/SortOrder.pm
 t/tests/Test/Webservice/InterMine/TemplateConstraintFactory.pm
 t/tests/Test/Webservice/InterMine/TemplateConstraints.pm
 t/tests/Test/Webservice/InterMine/TemplateFactory.pm
+META.yml

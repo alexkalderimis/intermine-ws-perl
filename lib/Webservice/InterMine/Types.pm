@@ -285,10 +285,10 @@ coerce ServiceRootUri, from SlashedPath, via {
     my $suffix = (m|/service$|) ? '' : '/service';
     URI->new($prefix . $_ . $suffix);
 };
-coerce ServiceRootUri, from NotServiceRoot, via {
-    require Webservice::InterMine::ServiceResolver;
-    return URI->new(Webservice::InterMine::ServiceResolver->new->resolve($_));
-};
+#coerce ServiceRootUri, from NotServiceRoot, via {
+#    require Webservice::InterMine::ServiceResolver;
+#    return URI->new(Webservice::InterMine::ServiceResolver->new->resolve($_));
+#};
 
 # QUERIES
 
