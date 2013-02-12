@@ -15,7 +15,7 @@ my $do_live_tests = $ENV{RELEASE_TESTING};
 unless ($do_live_tests) {
     plan( skip_all => "Acceptance tests for release testing only" );
 } else {
-    plan( tests => 191 );
+    plan( tests => 192 );
 }
 
 my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
@@ -507,7 +507,8 @@ TEST_IMPORTED_FNS: {
 
 TEST_LIST_STATUS: {
     #my @lists = get_service("www.flymine.org/query")->get_lists();
-    my @lists = get_service("localhost/intermine-test", "test-user-token")->get_lists();
+    my @lists = get_service($url, "test-user-token")->get_lists();
+    ok(~~@lists, "There are some lists");
     ok($lists[0]->has_status, "Status is provided");
     my %possible_statuses = (CURRENT => 1, TO_UPGRADE => 1, NOT_CURRENT => 1);
     ok($possible_statuses{$lists[0]->status}, "And list is one of the possible statuses");
