@@ -36,19 +36,19 @@ isa_ok($module->get_service, 'Webservice::InterMine::Service', "The service it m
 throws_ok(
     sub {$module->get_service("not.a.good.url")},
     qr/Uri does not look like a service url/,
-    "Throws an error at bad urls",
+    "Throws an error at urls that don't have paths",
 );
 
 throws_ok(
     sub {$module->get_service("not.a.good.url/with/path")},
     qr/Can't connect/,
-    "Throws an error at bad urls",
+    "Throws an error at bad urls that don't resolve to anything",
 );
 
 throws_ok(
-    sub {$module->get_service("http://localhost:8080/intermine-test/foo/")},
+    sub {$module->get_service("$url/foo/")},
     qr/version.*please check the url/,
-    "Throws an error at bad urls",
+    "Throws an error at urls that resolve but which don't seem interminy",
 );
 
 ok($module->get_service->version >= 6, "Service version is correct");
