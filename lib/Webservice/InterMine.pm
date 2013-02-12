@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = "1.0200";
+our $VERSION = "1.0201";
 
 =head1 NAME
 
@@ -456,8 +456,8 @@ sub get_service {
     $url = $url || $_[0] || $service_url;
     croak "No url provided - either directly or on 'use'"
       unless $url;
-    if ( $services{$url} ) {
-        return $services{$url};
+    if ( $services{$url} && (@args < 2)) {
+        return $services{$url}; # Only return from cache if no auth is provided.
     }
 
     my $service = Webservice::InterMine::Service->new( @args );
