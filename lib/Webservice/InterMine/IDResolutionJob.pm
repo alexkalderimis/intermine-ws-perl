@@ -9,6 +9,8 @@ use Webservice::InterMine::Types qw/Service/;
 use Time::HiRes qw/gettimeofday/;
 use Carp qw(croak confess);
 
+require HTTP::Request::Common;
+
 =head1 NAME
 
 Webservice::InterMine::IDResolutionJob
@@ -243,7 +245,7 @@ sub as_submission {
     return {
         identifiers   => $self->identifiers,
         type          => $self->type,
-        extra         => $self->extra,
+        extra         => ($self->extra || ''),
         caseSensitive => ($self->caseSensitive ? 'true' : 'false'),
         wildCards     => ($self->caseSensitive ? 'true' : 'false'),
     };
@@ -302,6 +304,23 @@ sub fetch_results {
     my $self = shift;
     my $data = $self->service->fetch_json('/ids/' . $self->uid . '/result');
     return $data->{results};
+}
+
+=head2 delete()
+
+Delete this job from the server.
+
+=cut
+
+sub delete {
+    my $self = shift;
+    my $uri = $self->service->build_uri($self->service->root . '/ids/' . $self->uid);
+    my $resp = $self->service->agent->request(HTTP::Request::Common::DELETE($uri));
+    if ($resp->is_error) {
+        my $error = eval {$self->decode($resp->content)->{error}}
+            || $resp->status_line . $resp->content;
+        confess $error;
+    }
 }
 
 __PACKAGE__->meta->make_immutable;
