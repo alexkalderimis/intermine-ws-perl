@@ -17,6 +17,8 @@ unless ($do_live_tests) {
 } else {
     plan( tests => 132 );
 
+my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
+note("Testing against $url");
 my $module = 'Webservice::InterMine';
 my $id_file = 't/data/test-identifiers.list';
 
@@ -25,7 +27,7 @@ use_ok($module);
 GET_SERVICE: {
     no warnings "deprecated";
     $service = eval {Webservice::InterMine->get_service(
-        'localhost/intermine-test', 'intermine-test-user', 'intermine-test-user-password');};
+        $url, 'intermine-test-user', 'intermine-test-user-password');};
     die $@ if $@;
 }
 

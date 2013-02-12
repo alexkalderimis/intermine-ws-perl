@@ -19,13 +19,14 @@ unless ($do_live_tests) {
 } else {
     plan( tests => 130 );
 
+my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
+note("Testing against $url");
 my $module = 'Webservice::InterMine';
 my $id_file = 't/data/test-identifiers.list';
 
 use_ok($module);
 
-$service = Webservice::InterMine->get_service(
-    'localhost:8080/intermine-test', 'test-user-token');
+$service = Webservice::InterMine->get_service($url, 'test-user-token');
 
 $initial_list_count = $service->list_count;
 

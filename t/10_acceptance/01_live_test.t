@@ -18,9 +18,11 @@ unless ($do_live_tests) {
     plan( tests => 191 );
 }
 
+my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
+note("Testing against $url");
+
 my $module = 'Webservice::InterMine';
 
-my $url = 'http://localhost:8080/intermine-test/service';
 my @view = ('Employee.name', 'Employee.age', 'Employee.fullTime',
     'Employee.address.address', 'Employee.department.name',
     'Employee.department.company.name',

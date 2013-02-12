@@ -9,7 +9,11 @@ unless ($do_live_tests) {
     plan( skip_all => "Acceptance tests for release testing only" );
 } else {
     plan( tests => 7);
-    my $service = get_service('localhost/intermine-test');
+
+    my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
+    note("Testing against $url");
+
+    my $service = get_service($url);
     my $obj = $service->resultset("Employee")->select("*")->where(name => "David Brent")->first(as => 'objects');
 
     is($obj->name, "David Brent");
