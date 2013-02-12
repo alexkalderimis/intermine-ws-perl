@@ -165,5 +165,6 @@ Revision history for Webservice-InterMine
 1.0200: Tue Jan 15 17:56:13 GMT 2013
         Added method to get list of widgets. (Webservice::InterMine::Service::widgets).
         Added mechanism for submitting ID resolution jobs and polling for results.
-        
+1.0300: Tue Feb 12 19:33:06 GMT 2013
+        Added delete method to IDResolutionJob.
 

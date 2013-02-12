@@ -131,6 +131,7 @@ t/10_acceptance/06_redirection.t
 t/10_acceptance/07_lazy_references.t
 t/10_acceptance/08_enrichment.t
 t/10_acceptance/09_widgets.t
+t/10_acceptance/10_id_resolution.t
 t/data/bad_templates.xml
 t/data/bad_xml.txt
 t/data/default-template-queries.xml
