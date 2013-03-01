@@ -49,7 +49,7 @@ use Net::HTTP;
 use URI;
 use LWP;
 use MIME::Base64;
-use MooseX::Types::Moose qw/Str Int/;
+use MooseX::Types::Moose qw/Str Int Maybe/;
 use Webservice::InterMine::Types
   qw(ServiceVersion ServiceRootUri TemplateFactory SavedQueryFactory ListFactory UserAgent);
 use InterMine::Model::Types qw(Model);
@@ -174,9 +174,15 @@ has root => (
     handles  => { host => 'host', },
 );
 
-for my $attr (qw/user pass token/) {
+for my $attr (qw/user pass/) {
     has $attr => (is => 'ro', isa => Str, predicate => 'has_' . $attr);
 }
+
+has token => (
+    is => 'ro',
+    isa => Maybe[Str],
+    predicate => 'has_token'
+);
 
 =head2 model
 
