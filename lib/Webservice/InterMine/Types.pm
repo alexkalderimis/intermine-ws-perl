@@ -124,7 +124,7 @@ use MooseX::Types -declare => [
 use MooseX::Types::Moose qw/
    Defined Bool Object Str ArrayRef HashRef Undef Maybe Int
 /;
-
+use InterMine::Model::Types qw/PathString/;
 
 # UTILITY
 
@@ -400,5 +400,6 @@ class_type DomNode, { class => 'XML::DOM::Node' };
 
 class_type Path, { class => 'Webservice::InterMine::Path' };
 coerce Str, from Path, via {$_->to_string};
+coerce PathString, from Path, via {$_->to_string};
 
 1;
