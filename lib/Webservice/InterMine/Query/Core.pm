@@ -214,6 +214,7 @@ Return a clone of this query.
 sub clone {
     my $self  = shift;
     my $clone = bless {%$self}, ref $self;
+    $clone->select($self->views); # deref view list
     $clone->{constraints} = [];
     $clone->suspend_validation;
     for my $con ($self->all_constraints) {
