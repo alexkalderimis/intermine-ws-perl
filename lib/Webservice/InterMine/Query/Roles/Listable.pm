@@ -72,6 +72,7 @@ sub make_list_query {
     my $self = shift;
     my $path = shift or confess "No path passed to make_list_query";
     my $clone = $self->clone;
+    $clone->clear_sort_order; # Sort order is meaningless for list-queries
     $path = $clone->path($path); # promote to Path
     $path = $path->prefix() if $path->end_is_attribute;
 
