@@ -105,7 +105,7 @@ use MooseX::Types -declare => [
         File
         NotAllLowerCase
 
-        Date
+        Date ZuluDateFormat TZDateFormat UnknownDateFormat
 
         UserAgent
 
@@ -380,7 +380,12 @@ coerce RequestFormat, from TSVFormat, via { 'tab' };
 # DATES
 
 class_type Date, {class => 'DateTime'};
-coerce Date, from Str, via {DateTime::Format::ISO8601->parse_datetime($_)};
+subtype ZuluDateFormat, as Str, where {/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/};
+subtype TZDateFormat, as Str, where {/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}$/};
+subtype UnknownDateFormat, as Str, where {$_ !~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/};
+coerce Date, from ZuluDateFormat, via {DateTime::Format::ISO8601->parse_datetime($_)};
+coerce Date, from TZDateFormat, via {DateTime::Format::ISO8601->parse_datetime(substr($_, 0, -2))};
+coerce Date, from UnknownDateFormat, via {DateTime::Format::ISO8601->parse_datetime($_)};
 
 # LWP
 
