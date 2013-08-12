@@ -17,7 +17,7 @@ my($service, $initial_list_count);
 unless ($do_live_tests) {
     plan( skip_all => "Acceptance tests for release testing only" );
 } else {
-    plan( tests => 130 );
+    plan( tests => 132 );
 
 my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
 note("Testing against $url");
@@ -410,6 +410,18 @@ RENAME_DELETE: {
     dies_ok {$list += "Corinne"} "Attempts to use the list throw exceptions";
 }
 
+
+MAKE_LIST_QUERY: {
+    my $query = $service->new_query(class => "Employee");
+    $query->select('address.address', 'name');
+    my $expected = $query->count;
+    my $list_query = $query->make_list_query('Employee');
+    my $list = $service->new_list(content => $list_query);
+
+    ok($list, "Can make a list from one column of a query");
+    is $list->size, $expected, "... and it has the right size";
+}
+
 note "\nNo of lists made: " . ($service->list_count - $initial_list_count);
 }
 
@@ -418,5 +430,6 @@ END {
         is $service->list_count, $initial_list_count, "The service cleaned up after itself.";
     }
 }
+
 
 __END__

@@ -271,4 +271,19 @@ sub path_method_modification:Test(2) {
     isa_ok($path->{service}, 'Webservice::InterMine::Service');
 }
 
+sub make_list_query:Test(6) {
+    my $test = shift;
+    my $obj = $test->{object};
+    $obj->select('Employee.name', 'Employee.address.address');
+    my $lq = $obj->make_list_query('Employee');
+    my @cons_on_addr = $lq->find_constraints(sub { $_->path eq 'Employee.address.id' });
+
+    ok($lq, "Can make a list query");
+    isa_ok($lq, 'Webservice::InterMine::Query', '.. and it is a query');
+    is($lq->get_view(0), 'Employee.id', '.. and it has Employee.id in the select list');
+    is($lq->view_size, 1, '.. and that is all there is in the view');
+    ok(@cons_on_addr == 1, '.. and there is a constraint on address.address');
+    is($cons_on_addr[0]->op, 'IS NOT NULL', '..and it requires that addresses exist');
+}
+
 1;

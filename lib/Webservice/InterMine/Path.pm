@@ -170,7 +170,7 @@ attribute.
 sub end_is_attribute {
     my $self = shift;
     my $end = $self->last_bit;
-    if (class_of($end)) {
+    if ((not $end) or class_of($end)) {
         return 0;
     } else {
         return 1;
@@ -208,7 +208,7 @@ C<< $path->append("name") >> should return a path representing
 
 sub append {
     my ($self, @parts) = @_;
-    return Path->new($self->to_string . "." . join('.', @parts), 
+    return $self->new($self->to_string . "." . join('.', @parts), 
         $self->{service}, $self->{subtypes});
 }
 

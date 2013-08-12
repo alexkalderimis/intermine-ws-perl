@@ -865,4 +865,27 @@ sub clean_out_SCCs : Test(4) {
     lives_ok(sub {$obj->validate}, "... and the object survives validation");
 }
 
+sub clone:Test(6) {
+
+    my $test = shift;
+    my $obj  = $test->{object};
+
+    $obj->clear_constraints;
+    $obj->clear_view;
+
+    $obj->add_views('Employee.name', 'Employee.department.name');
+    $obj->add_constraint(path => 'age', op => '>', value => 500);
+    my $clone = $obj->clone;
+    $clone->add_view('end');
+    $clone->add_constraint(path => 'end', op => 'IS NOT NULL');
+    $clone->get_constraint('A')->set_value(1000);
+
+    is($obj->view_size, 2, 'The views are unconnected, original side.');
+    is($clone->view_size, 3, '.. and from the clone\'s point of view.');
+    is($obj->count_constraints, 1, 'The constraints are unconnected, original POV');
+    is($clone->count_constraints, 2, 'The constraints are unconnected, clone POV');
+    is($obj->get_constraint('A')->value, 500, 'The original has not changed its constraint value');
+    is($clone->get_constraint('A')->value, 1000, 'The clone has changed its constraint value');
+}
+
 1;
