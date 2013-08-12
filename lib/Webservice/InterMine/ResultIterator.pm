@@ -512,7 +512,8 @@ sub connect {
         push @pairs, join('=', map {uri_escape($_)} @pair);
     }
     my $content = join('&', @pairs);
-    my @req = ($method, $uri->path, %headers, $content);
+
+    my @req = ($method, $uri->path_query, %headers, $content);
     warn "SENDING REQUEST", $connection->format_request(@req), "\n" if $ENV{DEBUG};
     $connection->write_request(@req) or confess "Unable to write request";
     $self->set_connection($connection);
