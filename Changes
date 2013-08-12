@@ -167,4 +167,6 @@ Revision history for Webservice-InterMine
         Added mechanism for submitting ID resolution jobs and polling for results.
 1.0300: Tue Feb 12 19:33:06 GMT 2013
         Added delete method to IDResolutionJob.
+1.0302: Mon Aug 12 14:43:49 BST 2013
+        Bug fix release.
 

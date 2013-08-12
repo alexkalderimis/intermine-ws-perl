@@ -490,6 +490,7 @@ sub connect {
 
     $query_form->{format} = $self->request_format;
     
+    warn sprintf("CONNECTING TO %s:%s", $uri->host, $uri->port) if $ENV{DEBUG};
     my $connection = Net::HTTP->new( Host => $uri->host, PeerPort => $uri->port )
         or confess "Could not connect to host: $uri $@";
     my %headers = (
@@ -507,14 +508,13 @@ sub connect {
 
     my @pairs;
     while (my @pair = each %$query_form) {
-        warn join("=", @pair), "\n" if $ENV{DEBUG};
+        warn 'UNENCODED-PARAM: ', join("=", @pair), "\n" if $ENV{DEBUG};
         push @pairs, join('=', map {uri_escape($_)} @pair);
     }
     my $content = join('&', @pairs);
-    warn $connection->format_request($method => "$uri", %headers, $content), "\n"
-        if $ENV{DEBUG};
-    $connection->write_request(POST => "$uri", %headers, $content)
-        or die "Unable to write request";
+    my @req = ($method, $uri->path, %headers, $content);
+    warn "SENDING REQUEST", $connection->format_request(@req), "\n" if $ENV{DEBUG};
+    $connection->write_request(@req) or confess "Unable to write request";
     $self->set_connection($connection);
 }
 
