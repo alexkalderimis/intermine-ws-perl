@@ -169,4 +169,7 @@ Revision history for Webservice-InterMine
         Added delete method to IDResolutionJob.
 1.0302: Mon Aug 12 14:43:49 BST 2013
         Bug fix release.
+1.0400: Support for new list date formats from server.
+1.0402: Thu Oct 31 17:27:03 GMT 2013
+        Bug fix release - failure to set logic correctly in Query::clone.
 
