@@ -220,6 +220,7 @@ sub clone {
     for my $con ($self->all_constraints) {
         $clone->add_constraint(%$con);
     }
+    $clone->set_logic($self->logic) if $self->has_logic;
     $clone->resume_validation;
     return $clone;
 }

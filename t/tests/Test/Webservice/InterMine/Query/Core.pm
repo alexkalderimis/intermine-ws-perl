@@ -617,6 +617,21 @@ sub logic_after_adding_constraint : Test(1) {
     is($obj->logic->code, "((A and B or C and D) or E) and F", "Adds an and'ed constraint to the logic");
 }
 
+sub logic_after_cloning : Test(1) {
+
+    my $test = shift;
+    my $q  = $test->{object};
+
+    $q->clear_constraints;
+
+    my ($a, $b, $c) = map {$q->add_constraint("Employee.age" => $_)} (1 .. 3);
+
+    $q->set_logic($a | $b | $c);
+
+    ok($q->logic eq $q->clone->logic);
+}
+
+
 sub logic : Test(7) {
     my $test = shift;
     my $obj  = $test->{object};
