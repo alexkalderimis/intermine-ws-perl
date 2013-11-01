@@ -32,6 +32,13 @@ use Test::Exception;
 use Test::XML;
 use Test::MockObject::Extends;
 use Test::MockObject;
+use XML::Compare;
+
+
+sub compare_xml {
+    my $comparator = XML::Compare->new;
+    return $comparator->error unless ($comparator->is_same(@_));
+}
 
 use Webservice::InterMine::Service;
 use Webservice::InterMine::ResultIterator;
@@ -137,13 +144,31 @@ sub _inheritance : Test(3) {
     }
 }
 
-sub service_methods : Test(2) {
+sub service_methods : Test(4) {
     my $test = shift;
     my $obj = $test->{filled_obj};
     my $service = $test->{service};
+    my $xml = <<'XML';
+    <query model="testmodel" view="Employee.name Employee.address.address Employee.department.name" name=""
+           sortOrder="Employee.name asc" constraintLogic="A and B and C">
+        <pathDescription pathString="Employee.name" description="The name of the employee"/>
+        <join style="OUTER" path="Employee.name"/>
+        <constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/>
+        <constraint value="18" path="Employee.age" code="B" op="&lt;"/>
+        <constraint path="Employee.name" code="C" op="ONE OF">
+            <value>Tom</value>
+            <value>Dick</value>
+            <value>Harry</value>
+        </constraint>
+        <constraint type="Manager" path="Employee"/>
+    </query>
+XML
+    chomp $xml;
     $service->mock(
         get_results_iterator => sub {
             my $self = shift;
+            is(1, compare_xml($_[1]{query}, $xml));
+            $_[1]{query} = 'QUERY';
             return @_;
         },
     )->mock(
@@ -153,9 +178,7 @@ sub service_methods : Test(2) {
         [$obj->results_iterator],
         [
             $test->modern_url,
-            {
-                query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
-            },
+            { query => 'QUERY' },
             [$test->def_view],
             'rr',
             'perl',
@@ -167,9 +190,7 @@ sub service_methods : Test(2) {
         [$obj->results_iterator(with => [qw/a b c/])],
         [
             $test->modern_url,
-            {
-                query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
-            },
+            { query => 'QUERY' },
             [$test->def_view],
             'rr',
             'perl',
@@ -206,15 +227,31 @@ sub url : Test(2) {
 }
 
 # Test that results passed the right parameters up the food-chain
-sub results : Test(4) {
+sub results : Test(7) {
     my $test = shift;
     my $obj  = $test->{filled_obj};
     my $service = $test->{service};
-    $service->mock(
-	get_results_iterator => sub {
+    my $xml = <<'XML';
+    <query view="Employee.name Employee.address.address Employee.department.name"
+           name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C">
+        <pathDescription pathString="Employee.name" description="The name of the employee"/>
+        <join style="OUTER" path="Employee.name"/>
+        <constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/>
+        <constraint value="18" path="Employee.age" code="B" op="&lt;"/>
+        <constraint path="Employee.name" code="C" op="ONE OF">
+            <value>Tom</value>
+            <value>Dick</value>
+            <value>Harry</value>
+        </constraint>
+        <constraint type="Manager" path="Employee"/>
+    </query>
+XML
+    $service->mock(get_results_iterator => sub {
         sub MockedResIt::get_all {return shift}
         my $self = shift;
         my $args = [@_];
+        is(1, compare_xml($_[1]{query}, $xml));
+        $args->[1]{query} = 'QUERY';
         return bless $args, 'MockedResIt';
 	});
 
@@ -222,9 +259,7 @@ sub results : Test(4) {
         $obj->results(as => 'string'), 
         [
             'FAKEROOTFAKEPATH', 
-                {
-                query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
-            },
+            { query => 'QUERY' },
             [$test->def_view],
             'tab',
             'perl',
@@ -236,9 +271,7 @@ sub results : Test(4) {
         $obj->results(as => 'arrayref'),
         [
             'FAKEROOTFAKEPATH', 
-                {
-                query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
-            },
+            { query => 'QUERY' },
             [$test->def_view],
             'arrayref',
             'perl',
@@ -250,9 +283,7 @@ sub results : Test(4) {
         $obj->results(),
         [
             'FAKEROOTFAKEPATH', 
-                {
-                query => '<query view="Employee.name Employee.address.address Employee.department.name" name="" model="testmodel" sortOrder="Employee.name asc" constraintLogic="A and B and C"><pathDescription pathString="Employee.name" description="The name of the employee"/><join style="OUTER" path="Employee.name"/><constraint value="Sandwich Distribution" path="Employee.department.name" code="A" op="="/><constraint value="18" path="Employee.age" code="B" op="&lt;"/><constraint path="Employee.name" code="C" op="ONE OF"><value>Tom</value><value>Dick</value><value>Harry</value></constraint><constraint type="Manager" path="Employee"/></query>'
-            },
+            { query => 'QUERY' },
             [$test->def_view],
             'rr',
             'perl',

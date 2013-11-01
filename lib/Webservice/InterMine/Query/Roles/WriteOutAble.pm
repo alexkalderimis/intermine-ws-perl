@@ -75,11 +75,12 @@ sub query_attributes {
 }
 
 sub apply_attributes_to_element {
-    my $self    = shift;
-    my $element = shift;
+    my ($self, $element, %attrs) = @_;
+
     my $doc = $element->getOwnerDocument;
-    my %attrs   = @_;
-    while ( my ( $tag, $value ) = each %attrs ) {
+    my @attr_names = sort keys %attrs;
+    for my $tag (@attr_names) {
+        my $value = $attrs{$tag};
         if (ref $value eq 'ARRAY') {
             for (@$value) {
             my $sub_elem = $doc->createElement($tag);
@@ -159,7 +160,7 @@ sub to_query_xml {
 sub to_DOM {
     my $self = shift;
 
-    my $doc   = new XML::DOM::Document;
+    my $doc   = XML::DOM::Document->new;
     my $query = $doc->createElement('query');
 
     $self->apply_attributes_to_element( $query,

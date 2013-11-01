@@ -1006,13 +1006,18 @@ sub parse_constraint_string {
         $args{path} = $bits[0];
         $constraint_string = $bits[1];
         @bits = $constraint_string =~ m/^
-                (
-                IS\sNOT\sNULL|
-                IS\sNULL|
-                (?:NOT\s)?IN|\S+
-                )
-        	   (
-               ?:\s+(.*)
+               (
+                IS\sNOT\sNULL      |
+                IS\sNULL           |
+                CONTAINS           |
+                LOOKUP             |
+                = | !=             |
+                < | > | >= | <=    |
+                DOES\sNOT\sCONTAIN |
+                (?:NOT\s)?IN       |\S+
+               )
+        	   (?:
+                \s+(.*)
                )?
 	        /x;
         if ( @bits < 1 ) {

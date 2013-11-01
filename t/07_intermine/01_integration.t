@@ -15,6 +15,7 @@ use Test::Exception;
 use HTTP::Response;
 use IO::File;
 use InterMine::Model::TestModel;
+use XML::Compare;
 
 sub slurp {
     my $file = shift;
@@ -265,5 +266,11 @@ lives_ok {$loaded = $module->load_query(source_file => "t/data/loadable_query.xm
 
 is_deeply([$loaded->views], ["Employee.name", "Employee.department.name"], "And it can parse it ok");
 
-my $expected_out_xml = q!<saved-query name=""><query name="" model="testmodel" view="Employee.name Employee.department.name" sortOrder="Employee.name asc"><constraint value="20" path="Employee.age" code="A" op="&lt;"/></query></saved-query>!;
-is($loaded->to_xml, $expected_out_xml);
+my $expected_out_xml = <<'XML';
+<saved-query name="">
+    <query name="" model="testmodel" view="Employee.name Employee.department.name" sortOrder="Employee.name asc">
+        <constraint value="20" path="Employee.age" code="A" op="&lt;"/>
+    </query>
+</saved-query>
+XML
+is(1, XML::Compare->new->is_same($loaded->to_xml, $expected_out_xml));

@@ -130,8 +130,8 @@ data structure. (default is C<perl>).
 
 The path of the query to summarise (see L<summarise>). 
 
-If a value for this is supplied, then C<< (as => 'jsonrows')  >> is implied.
-Also, unlike the L< summarise > method, this option will return
+If a value for this is supplied, then C<< (as => 'jsonrows') >> is implied.
+Also, unlike the L<summarise> method, this option will return
 a list of item/count pairs, as below:
 
   [

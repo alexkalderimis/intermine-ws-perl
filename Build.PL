@@ -50,6 +50,7 @@ my $build = Module::Build->new(
         'Test::Exception'           => 0,
         'Test::More'                => 0.9,
         'Test::XML'                 => 0,
+        'XML::Compare'              => '0.04',
         'Test::MockObject'          => 0,
         'Test::MockObject::Extends' => 0,
         'XML::Rules'                => 0,
