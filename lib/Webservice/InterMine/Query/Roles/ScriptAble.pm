@@ -52,8 +52,10 @@ sub to_script {
         for my $elem ( $self->$elems ) {
             $script_buffer .=
               '$query->add_' . substr( $elems, 0, -1 ) . '(';
-            while ( my ( $key, $value ) = each %$elem ) {
+            my @keys = sort keys %$elem;
+            for my $key (@keys) {
                 next if ($key =~ /^_/);
+                my $value = $elem->{$key};
                 $script_buffer .=
                   $TAB . $key . ' => ' . single_quoted($value) . $COMMA;
             }

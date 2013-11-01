@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 require Carp;
+use JSON ();
 use List::Util qw(reduce);
 
 my $do_live_tests = $ENV{RELEASE_TESTING};
@@ -30,6 +31,10 @@ GET_SERVICE: {
         $url, 'intermine-test-user', 'intermine-test-user-password');};
     die $@ if $@;
 }
+
+# Differs according to version.
+my $TRUE = sprintf("%-4s", JSON::true);
+my $FALSE = sprintf("%-5s", JSON::false);
 
 $initial_list_count = $service->list_count;
 
@@ -304,17 +309,21 @@ SHOWING: {
     my $expected_body = q!-------------+--------------+-------------------+--------------
 Employee.age.|.Employee.end.|.Employee.fullTime.|.Employee.name
 -------------+--------------+-------------------+--------------
-37...........|.4............|.false.............|.Karim........
-41...........|.UNDEF........|.false.............|.David.Brent..
-44...........|.UNDEF........|.false.............|.Frank.Möllers
-53...........|.0............|.true..............|.Jean-Marc....
-55...........|.9............|.false.............|.Jennifer.Schirrmann
+37...........|.4............|.FALSE.............|.Karim........
+41...........|.UNDEF........|.FALSE.............|.David.Brent..
+44...........|.UNDEF........|.FALSE.............|.Frank.Möllers
+53...........|.0............|.TRUE..............|.Jean-Marc....
+55...........|.9............|.FALSE.............|.Jennifer.Schirrmann
 !;
     my ($head, $body) = split(/\n/, $buffer, 2);    
     like $head, $expected_head, "Can produce a head for a summary";
+    $expected_body =~ s/TRUE/$TRUE/g;
+    $expected_body =~ s/FALSE/$FALSE/g;
 
     # Make spaces visible for diagnostics
-    $body =~ s/ /./g;
+    for ($body, $expected_body) {
+        s/ /./g;
+    }
     is $body, $expected_body,  "Can show a summary of a list";
 }
 

@@ -25,6 +25,7 @@ my $build = Module::Build->new(
         'HTTP::Response'                => 0,
         'MIME::Base64'                  => 0,
         'Module::Find'                  => 0.05,
+        'Module::Build'                 => 0,
         'Moose'                         => 0.95,
         'MooseX::Role::WithOverloading' => 0.03,
         'MooseX::Types'                 => 0.34,

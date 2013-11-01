@@ -7,6 +7,7 @@ use Carp qw/cluck/;
 
 use Test::More;
 use Test::Exception;
+use JSON ();
 
 use MooseX::Types::Moose qw(Bool);
 
@@ -17,6 +18,10 @@ unless ($do_live_tests) {
 } else {
     plan( tests => 192 );
 }
+
+# Differs according to version.
+my $TRUE = sprintf("%-4s", JSON::true);
+my $FALSE = sprintf("%-5s", JSON::false);
 
 my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
 note("Testing against $url");
@@ -153,7 +158,7 @@ is($res->[1][3], "Employee Street, AVille", "With the right fields - Str") or di
 my $res_slice = [
   'EmployeeA2',
   '20',
-  'true',
+  JSON::true,
   'Employee Street, AVille',
   'DepartmentA1',
   'CompanyA',
@@ -261,10 +266,12 @@ SHOWING: {
 --------------+--------------+-------------------+--------------------------+--------------------------+----------------------------------+---------------------------------
 Employee.name.|.Employee.age.|.Employee.fullTime.|.Employee.address.address.|.Employee.department.name.|.Employee.department.company.name.|.Employee.department.manager.name
 --------------+--------------+-------------------+--------------------------+--------------------------+----------------------------------+---------------------------------
-EmployeeA1....|.10...........|.true..............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
-EmployeeA2....|.20...........|.true..............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
-EmployeeA3....|.30...........|.false.............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
+EmployeeA1....|.10...........|.TRUE..............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
+EmployeeA2....|.20...........|.TRUE..............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
+EmployeeA3....|.30...........|.FALSE.............|.Employee.Street,.AVille..|.DepartmentA1.............|.CompanyA.........................|.EmployeeA1......................
 !;
+    $expected =~ s/TRUE/$TRUE/g;
+    $expected =~ s/FALSE/$FALSE/g;
     for ($buffer, $expected) {
         s/\t/[TAB]/g;
         s/ /./g;
@@ -317,7 +324,7 @@ for my $row (0, 1, 2) {
     }
 }
 
-$exp_res = ['EmployeeA2',20, "true"];
+$exp_res = ['EmployeeA2',20, JSON::true];
 
 is_deeply($t->results(size => 1, start => 1)->[0]->to_aref, $exp_res, "And it handles start and size");
 
@@ -380,10 +387,12 @@ SHOWING_TEMPLATES: {
 --------------------------+--------------------------+------------------------------
 Department.employees.name.|.Department.employees.age.|.Department.employees.fullTime
 --------------------------+--------------------------+------------------------------
-EmployeeB1................|.40.......................|.true.........................
-EmployeeB2................|.50.......................|.true.........................
-EmployeeB3................|.60.......................|.true.........................
+EmployeeB1................|.40.......................|.TRUE.........................
+EmployeeB2................|.50.......................|.TRUE.........................
+EmployeeB3................|.60.......................|.TRUE.........................
 !;
+    $expected =~ s/TRUE/$TRUE/g;
+    $expected =~ s/FALSE/$FALSE/g;
     $buffer =~ s/ /./g;
     $expected =~ s/ /./g;
     

@@ -11,6 +11,7 @@ unless ($do_live_tests) {
 }
 
 use Webservice::InterMine;
+use JSON ();
 
 my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
 note("Testing against $url");
@@ -43,8 +44,8 @@ my $boolean_summary = $rs->summarize("fullTime");
 is_deeply(
     $boolean_summary,
     {
-        true => 33,
-        false => 49
+        JSON::true,   33,
+        JSON::false,  49,
     },
     "Can summarise all info"
 ) or diag explain $boolean_summary;

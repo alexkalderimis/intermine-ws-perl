@@ -17,10 +17,10 @@ my $query = Webservice::InterMine->new_query;
 $query->add_view( 'Employee.name', 'Employee.age' );
 
 $query->add_constraint(
-    value => '',
-    path  => 'Employee.name',
-    op    => '=',
     code  => 'A',
+    op    => '=',
+    path  => 'Employee.name',
+    value => '',
 );
 
 my $results = $query->results;

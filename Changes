@@ -1,5 +1,9 @@
 Revision history for Perl module Webservice::InterMine
 
+1.0403 2013-11-01 17:34:12+00:00
+        * Bux fix release - Address smoke test failures in recent perls:
+          5.14, 5.16, 5.18, 5.19.
+
 1.0402 2013-10-31 17:27:03 GMT
         * Bug fix release - failure to set logic correctly in Query::clone.
 
