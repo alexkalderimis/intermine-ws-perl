@@ -621,23 +621,38 @@ sub append {
     my $name = $self->name;
     my $resp;
     my ($ids, $content_type) = ($content, "text/plain");
+
     match_on_type $content => (
         List,     sub {$ids = $_->to_query},
-        ListOfListOperables, sub {$ids = $self->factory->union($_)->to_query},
+        ListOfListOperables, sub {
+            $ids = $self->factory->union($_)->to_query;
+        },
         ArrayRef, sub {$ids = join("\n", @$_)},
-        File,     sub {$ids = [identifiers => [$content]]; $content_type = "form-data";},
+        File,     sub {
+            $ids = [identifiers => [$content]];
+            $content_type = "form-data";
+        },
         sub {}
     );
     match_on_type $ids => (
         Listable, sub {
-            my $uri = $self->service->build_uri($_->get_list_append_uri,
-                listName => $name, path => $path, $_->get_list_request_parameters,
+            my $uri = $self->service->build_uri(
+                $_->get_list_append_uri,
+                listName => $name,
+                path => $path,
+                $_->get_list_request_parameters,
             );
             $resp = $self->service->get($uri);
         },
         sub {
-            my $uri = $self->service->build_uri($self->service_root . LIST_APPEND_PATH, name => $name);
-            $resp = $self->service->post($uri, 'Content-Type' => $content_type, Content => $_);
+            my $uri = $self->service->build_uri(
+                $self->service_root . LIST_APPEND_PATH,
+                name => $name
+            );
+            $resp = $self->service->post($uri,
+                'Content-Type' => $content_type,
+                Content => $_
+            );
         }
     );
     my $new_list = $self->factory->parse_upload_response($resp);

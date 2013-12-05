@@ -109,7 +109,8 @@ APPENDING: {
 
         lives_ok {$list_to_append_overload += $content} "Can use overloading to append $source_type";
         is ($list_to_append_overload->size, $appended_size, 
-            "$list_to_append_overload now has the right size after $source_type");
+            "$list_to_append_overload now has the right size after $source_type")
+            or last APPENDING;
     }
 
     my $list_to_append_a = $service->new_list(

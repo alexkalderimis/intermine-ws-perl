@@ -234,6 +234,64 @@ has results => (
 
 =head1 METHODS
 
+=head2 all_match_ids()
+
+Get the ids reported as match ids.
+
+=cut
+
+sub all_match_ids {
+    my $self = shift;
+    if ($self->service->version >= 16) {
+       my %ids;
+       my $results = $self->results;
+       for my $key (qw/MATCH DUPLICATE CONVERTED_TYPE OTHER/) {
+           for my $id ($self->match_ids($key)) {
+               $ids{$id} = 1;
+           }
+       }
+       return keys %ids;
+    } else {
+        return keys %{$self->results};
+    }
+}
+
+=head2 good_match_ids()
+
+Get the ids of objects reported at good matches
+
+=cut
+
+sub good_match_ids {
+    my $self = shift;
+    return $self->match_ids('MATCH');
+}
+
+=head2 match_ids($reason)
+
+Get the ids of objects reported as matches for the given reason.
+
+=cut
+
+sub match_ids {
+    my $self = shift;
+    my $reason = shift;
+
+    if ($self->service->version >= 16) {
+        return map {$_->{id}} @{ $self->results->{matches}{$reason} };
+    } else {
+        my @ids;
+        while (my ($id, $match) = each %{$self->results}) {
+            for my $reasons (values %{ $match->{identifiers} }) {
+                if (grep {/$reason/} @$reasons) {
+                    push @ids, $id;
+                }
+            }
+        }
+        return @ids;
+    }
+}
+
 =head2 as_submission()
 
 Get the data transmitted to the service to initialise the job.

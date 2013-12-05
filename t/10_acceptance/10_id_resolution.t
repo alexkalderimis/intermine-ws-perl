@@ -9,7 +9,7 @@ my $do_live_tests = $ENV{RELEASE_TESTING};
 unless ($do_live_tests) {
     plan( skip_all => "Acceptance tests for release testing only" );
 } else {
-    plan(tests => 3);
+    plan(tests => 5);
     my $url = $ENV{TESTMODEL_URL} || 'http://localhost:8080/intermine-test/service';
     note("Testing against $url");
 
@@ -26,7 +26,15 @@ unless ($do_live_tests) {
 
     my $results = $job->results;
 
-    is(~~@{[keys %$results]}, 3, "Found three things");
+    ok($results, "There are results");
+
+    my @ids = $job->all_match_ids;
+
+    is(~~@ids, 3, "Found three things") or diag(explain($job->results));
+
+    my @good_ids = $job->good_match_ids;
+
+    is(~~@ids, 3, "Found three good things") or diag(explain($job->results));
 
     $job->delete();
 

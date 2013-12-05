@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Webservice::InterMine::Cookbook::Lists::Recipe1 - Uploading Lists
+Webservice::InterMine::Cookbook::List::Combination - Combining Lists
 
 =head1 SYNOPSIS
 
@@ -87,7 +87,7 @@ L<http://intermine.org/wiki/PerlWebServiceAPI>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2006 - 2011 FlyMine, all rights reserved.
+Copyright 2006 - 2013 FlyMine, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
