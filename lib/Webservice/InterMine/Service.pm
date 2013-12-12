@@ -116,7 +116,7 @@ use constant {
 
     MODEL_PATH                 => '/model',
 
-    TEMPLATES_PATH             => '/templates/xml',
+    TEMPLATES_PATH             => '/templates',
     TEMPLATE_QUERY_PATH        => '/template/results',
     TEMPLATE_SAVE_PATH         => '/template/upload',
     TEMPLATE_LIST_PATH         => '/template/tolist/json',
@@ -194,7 +194,7 @@ database schema. See L<InterMine::Model>
 
 sub _build_model {
     my $self = shift;
-    my $src = $self->fetch( $self->root . MODEL_PATH );
+    my $src = $self->fetch( $self->root . MODEL_PATH, format => 'xml');
     my $model = Webservice::InterMine::Model->new(string => $src);
     $model->set_service($self);
     $model;
@@ -452,7 +452,7 @@ has _templates => (
         my $self = shift;
         return [
             $self, $self->model,
-            $self->fetch( $self->root . TEMPLATES_PATH ),
+            $self->fetch($self->root . TEMPLATES_PATH),
         ];
     },
     handles => { 
@@ -814,9 +814,9 @@ sub create_row_parser {
     }
 }
 
-=item * fetch($url)
+=item * fetch($url, @params)
 
-A simple data fetch method, for getting data as represented
+A simple data fetch method, for GETting data as represented
 by a url and doing basic error checks on the response before
 returning the content. Used internally for obtaining several
 items of data from the service.
@@ -826,7 +826,7 @@ items of data from the service.
 sub fetch {
     my $self = shift;
     my $url  = shift;
-    my $uri  = $self->build_uri($url);
+    my $uri  = $self->build_uri($url, @_);
     warn "FETCHING $uri " . gettimeofday() if $ENV{DEBUG};
     my $resp = $self->agent->get($uri);
     # Correct incorrect bases.
@@ -851,7 +851,7 @@ parses that response as JSON, returning the reified data structure.
 sub fetch_json {
     my $self = shift;
     my $url  = $self->root . shift;
-    my $text = $self->fetch($url);
+    my $text = $self->fetch($url, format => 'json');
     my $data = $self->decode($text);
     unless ($data->{wasSuccessful}) {
         confess($data->{error});
