@@ -1,5 +1,8 @@
 Revision history for Perl module Webservice::InterMine
 
+1.0405 2013-12-12 22:33:28+00:00
+        * Support for API version 16.
+
 1.0404 2013-12-05 14:10:00+00:00
         * Support new ID resolution format.
 
